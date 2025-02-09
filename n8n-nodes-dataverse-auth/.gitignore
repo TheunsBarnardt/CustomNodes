@@ -1,0 +1,49 @@
+# Compiled output
+dist/
+.tsbuildinfo
+
+# Node modules
+node_modules/
+
+# Package manager files
+package-lock.json
+yarn.lock
+
+# Editor and IDE files
+.idea/
+.vscode/
+*.swp
+*~
+*.tmp
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log
+
+# Environment variables (IMPORTANT: Never commit these!)
+.env
+
+# Other temporary files or directories
+temp/
+tmp/
+.cache/
+
+# n8n specific, if you have a local .n8n directory in your node's folder
+.n8n/
+
+# If you use a different testing framework's cache or reports
+coverage/
+jest-cache/
+
+# If you use a different package manager
+pnpm-lock.yaml
+
+# If you use zip files for packaging
+*.zip
+
+# Any other files you don't want to track
+# Example:
+# my-secret-config.json  (Never commit secrets!)
