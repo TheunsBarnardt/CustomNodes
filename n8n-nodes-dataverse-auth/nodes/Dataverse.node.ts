@@ -94,7 +94,7 @@ export class Dataverse implements INodeType {
 				if (operation === 'GET') {
 					const query = this.getNodeParameter('query', itemIndex) as string;			
 
-					const data = await auth.fetchDataverseData(query);
+					const data = await auth.GetData(query);
 					
                     returnData.push({
                         json: data as IDataObject, // Push the actual parsed data

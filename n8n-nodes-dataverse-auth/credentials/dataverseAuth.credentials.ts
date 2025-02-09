@@ -70,7 +70,7 @@ export class dataverseAuth implements ICredentialType {
         });
     }
 
-    async fetchDataverseData(apiUrl: string): Promise<any> {
+    async GetData(apiUrl: string): Promise<any> {
         if (!this.accessToken || !this.scope || !this.credentials) {
             throw new Error("Authentication required before fetching data.");
         }
