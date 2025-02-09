@@ -15,7 +15,7 @@ var jwt = require('jsonwebtoken');
 
 export class Dataverse implements INodeType {
 	description: INodeTypeDescription = {
-		displayName: 'Dataverse',
+		displayName: 'Dataverse Auth',
 		name: 'dataverse',
 		icon: 'fa:fingerprint',
 		group: ['transform'],
