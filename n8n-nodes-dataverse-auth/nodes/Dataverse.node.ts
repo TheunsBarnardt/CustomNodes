@@ -15,7 +15,7 @@ export class Dataverse implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'Dataverse Auth',
 		name: 'dataverse',
-		icon: 'fa:fingerprint',
+		icon: 'file:Dataverse_scalable.svg',
 		group: ['transform'],
 		version: 1,
 		description: 'JWT',
@@ -71,6 +71,7 @@ export class Dataverse implements INodeType {
 				displayName: 'Query',
 				name: 'query',
 				type: 'string',
+				typeOptions:{editor :'jsEditor' },
 				default: '',
 				description: 'Webapi Query',
 				required: true,				
