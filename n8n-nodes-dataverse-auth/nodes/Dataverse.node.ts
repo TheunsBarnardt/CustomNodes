@@ -66,7 +66,15 @@ export class Dataverse implements INodeType {
                     },
                 ],
                 default: 'GET',
-			},			
+			},	
+			{
+				displayName: 'Entity Logical Name',
+				name: 'entityLogicalName',
+				type: 'string',
+				default: '',
+				description: 'Entity Logical Name',
+				required: true,				
+			},		
 			{
 				displayName: 'Query',
 				name: 'query',
@@ -92,10 +100,11 @@ export class Dataverse implements INodeType {
 
 		for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
 			try {				
+				const entityLogicalName = this.getNodeParameter('entityLogicalName', itemIndex) as string;	
+				const query = this.getNodeParameter('query', itemIndex) as string;			
 				if (operation === 'GET') {
-					const query = this.getNodeParameter('query', itemIndex) as string;			
 
-					const data = await auth.GetData(query);
+					const data = await auth.GetData(entityLogicalName,query);
 					
                     returnData.push({
                         json: data as IDataObject, // Push the actual parsed data
