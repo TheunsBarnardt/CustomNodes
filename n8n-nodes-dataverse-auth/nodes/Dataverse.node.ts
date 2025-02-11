@@ -11,6 +11,7 @@ import {
 } from 'n8n-workflow';
 import { dataverseAuth } from '../credentials/dataverseAuth.credentials';
 
+
 export class Dataverse implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'Dataverse',
@@ -202,41 +203,47 @@ export class Dataverse implements INodeType {
 		],
 	};
 
-	// Adjust methods for loadOptions
 	methods = {
-		loadOptions: {
-			async getEntityList(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
-				const credentials = await this.getCredentials('dataverseAuth');
-				const auth = new dataverseAuth();
-				await auth.authenticate(credentials, { url: '' });
-	
-				const tables = await auth.ListTables();
-	
-				return tables.tables.map((table: { logicalName: string, displayName: string }) => ({
-					name: `${table.displayName} - (${table.logicalName})`,
-					value: table.logicalName,
-				}));
-			},
-	
-			async getEntityColumns(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
-				const entityName = this.getCurrentNodeParameter('entityName') as string;
-				if (!entityName) {
-					return [];
-				}
-	
-				const credentials = await this.getCredentials('dataverseAuth');
-				const auth = new dataverseAuth();
-				await auth.authenticate(credentials, { url: '' });
-	
-				const columns = await auth.ListEntityColumns(entityName); // Fetch columns for the selected entity
-	
-				return columns.columns.map((table: { logicalName: string, displayName: string }) => ({
-					name: `${table.displayName} - (${table.logicalName})`,
-					value: table.logicalName,
-				}));			
-			},
+	loadOptions: {
+		async getEntityList(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+			// Use cached data if available
+			const cachedTables = dataverseAuth.getCachedTables();
+			if (cachedTables) {
+				return cachedTables;
+			}
+			const credentials = await this.getCredentials('dataverseAuth');
+			const auth = new dataverseAuth();
+			await auth.authenticate(credentials, { url: '' });
+			const tablesResponse = await auth.ListTables();
+			const options = tablesResponse.tables.map((table: { logicalName: string, displayName: string }) => ({
+				name: `${table.displayName} - (${table.logicalName})`,
+				value: table.logicalName,
+			}));
+			dataverseAuth.setCachedTables(options);
+			return options;
 		},
-	};
+
+		async getEntityColumns(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+			const entityName = this.getCurrentNodeParameter('entityName') as string;
+			if (!entityName) return [];
+			// Return cached columns if available
+			const cachedColumns = dataverseAuth.getCachedEntityColumns(entityName);
+			if (cachedColumns) {
+				return cachedColumns;
+			}
+			const credentials = await this.getCredentials('dataverseAuth');
+			const auth = new dataverseAuth();
+			await auth.authenticate(credentials, { url: '' });
+			const columnsResponse = await auth.ListEntityColumns(entityName);
+			const options = columnsResponse.columns.map((col: { logicalName: string, displayName: string }) => ({
+				name: `${col.displayName} - (${col.logicalName})`,
+				value: col.logicalName,
+			}));
+			dataverseAuth.setCachedEntityColumns(entityName, options);
+			return options;
+		},
+	},
+};
 
 	// The rest of your execute function remains as it is
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {

@@ -1,53 +1,102 @@
+// dataverseAuth.credentials.ts
+
 import {
-    ICredentialDataDecryptedObject,
-    ICredentialType,
     IDataObject,
     IHttpRequestOptions,
     INodeProperties,
+    ICredentialDataDecryptedObject,
+    ICredentialType,
+    INodePropertyOptions,
 } from 'n8n-workflow';
-
-import axios from 'axios';
+import axios, { AxiosInstance } from 'axios';
 
 export class dataverseAuth implements ICredentialType {
 
+    // Cache token and expiry
     private accessToken: string | null = null;
+    private tokenExpiry: number = 0;
     private scope: string | null = null;
     private credentials: ICredentialDataDecryptedObject | null = null;
-    private tokenExpiry: number | null = null;
-  
-    private extractEntityNameFromFetchXml(fetchXml: string): string | null {
-        const match = fetchXml.match(/<entity name=['"]([^'"]+)['"]/);
-        return match ? match[1] : null;
+    private axiosInstance: AxiosInstance | null = null;
+
+    // Static caches for load options data
+    private static cachedTables: INodePropertyOptions[] | null = null;
+    private static cachedEntityColumns: { [entityName: string]: INodePropertyOptions[] } = {};
+    
+    public static getCachedTables(): INodePropertyOptions[] | null {
+        return dataverseAuth.cachedTables;
     }
     
+    public static setCachedTables(tables: INodePropertyOptions[]): void {
+        dataverseAuth.cachedTables = tables;
+    }
+    
+    public static getCachedEntityColumns(entityName: string): INodePropertyOptions[] | undefined {
+        return dataverseAuth.cachedEntityColumns[entityName];
+    }
+    
+    public static setCachedEntityColumns(entityName: string, options: INodePropertyOptions[]): void {
+        dataverseAuth.cachedEntityColumns[entityName] = options;
+    }   
+    
+    // Helper: Create or Update Axios Instance
+    private updateAxiosInstance() {
+        if (!this.scope || !this.accessToken) return;
+        if (!this.axiosInstance) {
+            this.axiosInstance = axios.create({
+                baseURL: this.scope,
+                headers: {
+                    Authorization: `Bearer ${this.accessToken}`,
+                    'Content-Type': 'application/json',
+                    'OData-MaxPageSize': '5000',
+                },
+            });
+        } else {
+            // Update the token header if token has been refreshed
+            this.axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${this.accessToken}`;
+        }
+    }
+
+    // Authenticate (and reuse valid tokens)
     async authenticate(credentials: ICredentialDataDecryptedObject, requestOptions: IHttpRequestOptions): Promise<IHttpRequestOptions> {
         this.credentials = credentials;
-        const { tenantId, clientId, clientSecret, scope } = credentials as { tenantId: string, clientId: string, clientSecret: string, scope: string };
+        const { tenantId, clientId, clientSecret, scope } = credentials as { tenantId: string; clientId: string; clientSecret: string; scope: string };
         this.scope = scope;
 
-        const tokenResponse = await this.getToken(
-            String(tenantId),
-            String(clientId),
-            String(clientSecret),
-            String(scope)
-        );
+        // If we already have a valid token, just update the request headers
+        if (this.accessToken && Date.now() < this.tokenExpiry) {
+            this.updateAxiosInstance();
+            requestOptions.headers = {
+                ...requestOptions.headers,
+                Authorization: `Bearer ${this.accessToken}`,
+                'Content-Type': 'application/json',
+                'OData-MaxPageSize': '5000',
+            };
+            return requestOptions;
+        }
+
+        // Otherwise, get a new token
+        const tokenResponse = await this.getToken(String(tenantId), String(clientId), String(clientSecret), String(scope));
+        this.accessToken = tokenResponse.access_token;
+
+        // Set expiry (using token's expires_in or default to 3600 seconds)
+        const expiresIn = tokenResponse.expires_in ? parseInt(tokenResponse.expires_in, 10) : 3600;
+        this.tokenExpiry = Date.now() + expiresIn * 1000;
+
+        // Update axios instance with the new token
+        this.updateAxiosInstance();
 
         requestOptions.headers = {
             ...requestOptions.headers,
-            Authorization: `Bearer ${tokenResponse.access_token}`,
+            Authorization: `Bearer ${this.accessToken}`,
             'Content-Type': 'application/json',
-            'OData-MaxPageSize': 5000,
+            'OData-MaxPageSize': '5000',
         };
-
-        this.accessToken = tokenResponse.access_token;
-
-        // Correctly get the expires_in value if it exists, otherwise default to 1 hour
-        const expiresIn = tokenResponse.expires_in ? parseInt(tokenResponse.expires_in, 10) : 3600;
-        this.tokenExpiry = Date.now() + expiresIn * 1000;
 
         return requestOptions;
     }
 
+    // Token retrieval
     private async getToken(tenantId: string, clientId: string, clientSecret: string, resourceURL: string): Promise<any> {
         try {
             const url = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
@@ -57,8 +106,6 @@ export class dataverseAuth implements ICredentialType {
             data.append('client_secret', clientSecret);
             data.append('scope', `${resourceURL}/.default`);
 
-            console.log("url: ", url);
-            console.log("body: ", `${data}`);
             const response = await axios.post(url, data, {
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
@@ -70,22 +117,36 @@ export class dataverseAuth implements ICredentialType {
         }
     }
 
-    async UpdateData(entityName: string, recordId: string, updateData: IDataObject): Promise<any> {
-        if (!this.accessToken || !this.scope) {
-            throw new Error("Authentication required before updating data.");
+    // Ensure valid token (for every API call)
+    private async ensureAuthenticated(): Promise<void> {
+        if (!this.accessToken || Date.now() >= this.tokenExpiry) {
+            if (!this.credentials) {
+                throw new Error('Credentials are not available.');
+            }
+            const { tenantId, clientId, clientSecret, scope } = this.credentials as {
+                tenantId: string;
+                clientId: string;
+                clientSecret: string;
+                scope: string;
+            };
+            const tokenResponse = await this.getToken(String(tenantId), String(clientId), String(clientSecret), String(scope));
+            this.accessToken = tokenResponse.access_token;
+            const expiresIn = tokenResponse.expires_in ? parseInt(tokenResponse.expires_in, 10) : 3600;
+            this.tokenExpiry = Date.now() + expiresIn * 1000;
+            this.updateAxiosInstance();
         }
-    
-        const fullApiUrl = `${this.scope}/api/data/v9.2/${entityName}(${recordId})`;
-        console.log("Update API URL:", fullApiUrl);
-    
+    }
+
+    // API calls using the shared axios instance
+
+    async UpdateData(entityName: string, recordId: string, updateData: IDataObject): Promise<any> {
+        await this.ensureAuthenticated();
+        if (!this.axiosInstance) throw new Error('Axios instance not available');
+
+        const fullApiUrl = `/api/data/v9.2/${entityName}(${recordId})`;
         try {
-            const response = await axios.patch(fullApiUrl, updateData, {
-                headers: {
-                    Authorization: `Bearer ${this.accessToken}`,
-                    'Content-Type': 'application/json',
-                    'OData-MaxPageSize': '5000',
-                    'Prefer': 'return=representation',
-                },
+            const response = await this.axiosInstance.patch(fullApiUrl, updateData, {
+                headers: { Prefer: 'return=representation' },
             });
             return response.data;
         } catch (error: any) {
@@ -94,139 +155,85 @@ export class dataverseAuth implements ICredentialType {
     }
 
     async ListEntityColumns(entityName: string): Promise<{ columns: any[] }> {
-        if (!this.accessToken || !this.scope) {
-            throw new Error("Authentication required before retrieving entity columns.");
-        }
-    
-        const apiUrl = `${this.scope}/api/data/v9.2/EntityDefinitions(LogicalName='${entityName}')/Attributes?$select=LogicalName,DisplayName`;
-    
+        await this.ensureAuthenticated();
+        if (!this.axiosInstance) throw new Error('Axios instance not available');
+
+        const apiUrl = `/api/data/v9.2/EntityDefinitions(LogicalName='${entityName}')/Attributes?$select=LogicalName,DisplayName`;
         try {
-            const response = await axios.get(apiUrl, {
-                headers: {
-                    Authorization: `Bearer ${this.accessToken}`,
-                    'Content-Type': 'application/json',
-                    'OData-MaxPageSize': '5000',
-                },
-            });
-    
-            // Extracting logical names and display names of columns
+            const response = await this.axiosInstance.get(apiUrl);
             const columns = response.data.value.map((attribute: any) => ({
                 logicalName: attribute.LogicalName,
                 displayName: attribute.DisplayName?.UserLocalizedLabel?.Label || attribute.LogicalName,
             }));
-    
             return { columns };
         } catch (error: any) {
             throw new Error(`Dataverse API error: ${error.response?.status} - ${error.response?.statusText}. Details: ${JSON.stringify(error.response?.data)}`);
         }
     }
-    
-    
-    async ListTables(): Promise<any> {
-        if (!this.accessToken || !this.scope) {
-            throw new Error("Authentication required before retrieving tables.");
-        }
-    
-        const apiUrl = `${this.scope}/api/data/v9.2/EntityDefinitions?$select=LogicalName,DisplayName`;
-    
+
+    async ListTables(): Promise<{ tables: any[] }> {
+        await this.ensureAuthenticated();
+        if (!this.axiosInstance) throw new Error('Axios instance not available');
+
+        const apiUrl = `/api/data/v9.2/EntityDefinitions?$select=LogicalName,DisplayName`;
         try {
-            const response = await axios.get(apiUrl, {
-                headers: {
-                    Authorization: `Bearer ${this.accessToken}`,
-                    'Content-Type': 'application/json',
-                    'OData-MaxPageSize': '5000',
-                },
-            });
-    
-            // Extracting logical names and display names
+            const response = await this.axiosInstance.get(apiUrl);
             const entities = response.data.value.map((entity: any) => ({
                 logicalName: entity.LogicalName,
                 displayName: entity.DisplayName?.UserLocalizedLabel?.Label || entity.LogicalName,
             }));
-    
             return { tables: entities };
         } catch (error: any) {
             throw new Error(`Dataverse API error: ${error.response?.status} - ${error.response?.statusText}. Details: ${JSON.stringify(error.response?.data)}`);
         }
     }
 
+    // For FetchXML queries
+
+    private extractEntityNameFromFetchXml(fetchXml: string): string | null {
+        const match = fetchXml.match(/<entity name=['"]([^'"]+)['"]/);
+        return match ? match[1] : null;
+    }
+
     private modifyEntityLogicalName(entityLogicalName: string): string {
-        if (entityLogicalName.endsWith('s')) {
-            return entityLogicalName + 'es';
+        return entityLogicalName + (entityLogicalName.endsWith('s') ? 'es' : 's');
+    }
+
+    async GetData(type: string, query: string): Promise<any> {
+        await this.ensureAuthenticated();
+        if (!this.axiosInstance) throw new Error('Axios instance not available');
+
+        if (type === "fetchxml") {
+            const entityLogicalName = this.extractEntityNameFromFetchXml(query);
+            if (!entityLogicalName) {
+                throw new Error("Failed to extract entity name from FetchXML.");
+            }
+            const modifiedEntityLogicalName = this.modifyEntityLogicalName(entityLogicalName);
+            const fullApiUrl = `/api/data/v9.2/${modifiedEntityLogicalName}?fetchXml=${encodeURIComponent(query)}`;
+            try {
+                const response = await this.axiosInstance.get(fullApiUrl, {
+                    headers: { Prefer: 'odata.include-annotations="*"' },
+                });
+                return response.data;
+            } catch (error: any) {
+                throw new Error(`Dataverse API error: ${error.response?.status} - ${error.response?.statusText}. Details: ${JSON.stringify(error.response?.data)}`);
+            }
         } else {
-            return entityLogicalName + 's';
+            // For OData queries, assume 'query' is the relative path
+            const fullApiUrl = `/api/data/v9.2/${query}`;
+            try {
+                const response = await this.axiosInstance.get(fullApiUrl, {
+                    headers: { Prefer: 'odata.include-annotations="*"' },
+                });
+                return response.data;
+            } catch (error: any) {
+                throw new Error(`Dataverse API error: ${error.response?.status} - ${error.response?.statusText}. Details: ${JSON.stringify(error.response?.data)}`);
+            }
         }
     }
-    async GetData(type :string,query: string): Promise<any> {
-        if (!this.accessToken || !this.scope || !this.credentials) {
-            throw new Error("Authentication required before fetching data.");
-        }
-    
-        if (this.isTokenExpired()) {
-            const { tenantId, clientId, clientSecret, resourceURL } = this.credentials;
-            const tokenResponse = await this.getToken(
-                String(tenantId),
-                String(clientId),
-                String(clientSecret),
-                String(resourceURL)
-            );
-            this.accessToken = tokenResponse.access_token;
-            this.tokenExpiry = Date.now() + (tokenResponse.expires_in ? parseInt(tokenResponse.expires_in, 10) : 3600) * 1000;
-            console.log("Token Refreshed!");
-        }
 
-        if(type == "fetchxml")
-        {
-        const entityLogicalName = this.extractEntityNameFromFetchXml(query);
-        if (!entityLogicalName) {
-            throw new Error("Failed to extract entity name from FetchXML.");
-        }
-        const modifiedEntityLogicalName = this.modifyEntityLogicalName(entityLogicalName);
-        const fullApiUrl = `${this.scope}/api/data/v9.2/${modifiedEntityLogicalName}?fetchXml=${query}`;
-        console.log("fullApiUrl: ", fullApiUrl);
-    
-        try {
-            const response = await axios.get(fullApiUrl, {
-                headers: {
-                    Authorization: `Bearer ${this.accessToken}`,
-                    'Content-Type': 'application/json',
-                    'OData-MaxPageSize': '5000',
-                    'Prefer': 'odata.include-annotations="*"',
-                },
-            });
-    
-            return response.data;
-        } catch (error: any) {
-            throw new Error(`Dataverse API error: ${error.response?.status} - ${error.response?.statusText}. Details: ${JSON.stringify(error.response?.data)}`);
-        }
-    }else
-    {
-        const fullApiUrl = `${this.scope}/api/data/v9.2/${query}`;
-        console.log("fullApiUrl: ", fullApiUrl);
-    
-        try {
-            const response = await axios.get(fullApiUrl, {
-                headers: {
-                    Authorization: `Bearer ${this.accessToken}`,
-                    'Content-Type': 'application/json',
-                    'OData-MaxPageSize': '5000',
-                    'Prefer': 'odata.include-annotations="*"',
-                },
-            });
-    
-            return response.data;
-        } catch (error: any) {
-            throw new Error(`Dataverse API error: ${error.response?.status} - ${error.response?.statusText}. Details: ${JSON.stringify(error.response?.data)}`);
-        }
-    }
-}
-
-    private isTokenExpired(): boolean {
-        return this.tokenExpiry === null || Date.now() >= this.tokenExpiry;
-    }
-    // eslint-disable-next-line n8n-nodes-base/cred-class-field-name-unsuffixed
+    // ICredentialType Metadata
     name = 'dataverseAuth';
-    // eslint-disable-next-line n8n-nodes-base/cred-class-field-display-name-missing-api
     displayName = 'Dataverse Auth';
     properties: INodeProperties[] = [
         {
@@ -237,7 +244,7 @@ export class dataverseAuth implements ICredentialType {
                 {
                     name: 'Client Credentials',
                     value: 'clientCredentials',
-                }               
+                }
             ],
             default: 'clientCredentials',
         },
@@ -259,9 +266,7 @@ export class dataverseAuth implements ICredentialType {
             displayName: 'Client Secret',
             name: 'clientSecret',
             type: 'string',
-            typeOptions: {
-                password: true,
-            },
+            typeOptions: { password: true },
             default: '',
             description: 'The client secret generated for the application in Azure AD',
         },
@@ -269,10 +274,8 @@ export class dataverseAuth implements ICredentialType {
             displayName: 'Scope',
             name: 'scope',
             type: 'string',
-            default: 'https://<your-org-name>.crm4.dynamics.com', // Example, replace with your URL
+            default: 'https://<your-org-name>.crm4.dynamics.com',
             description: 'The URL of your Dataverse environment (e.g., https://<your-org-name>.crm4.dynamics.com)',
         },
-        // Add more properties for other authentication methods if you add them above.
-        // For example, for OAuth you might need redirect URIs, authorization URLs, etc.
     ];
 }
