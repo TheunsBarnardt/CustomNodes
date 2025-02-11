@@ -88,18 +88,30 @@ export class Dataverse implements INodeType {
 				description: 'Select the Dataverse entity (e.g., contacts, accounts)',
 			},
 			{
-				displayName: 'Record ID',
-				name: 'recordId',
-				type: 'string',
-				default: '',
+				displayName: 'Update Mode',
+				name: 'updateMode',
+				type: 'options',
+				options: [
+					{
+						name: 'JSON',
+						value: 'json',
+						description: 'Provide the update data as a JSON object',
+					},
+					{
+						name: 'Column',
+						value: 'column',
+						description: 'Manually select and update specific columns',
+					},
+				],
+				default: 'json',
 				displayOptions: {
 					show: {
 						operation: ['PATCH'],
 					},
 				},
-				required: true,
-				description: 'The unique identifier (GUID) of the record to update',
+				description: 'Choose how to update the record',
 			},
+			
 			{
 				displayName: 'Json Data',
 				name: 'updateData',
@@ -111,10 +123,51 @@ export class Dataverse implements INodeType {
 				displayOptions: {
 					show: {
 						operation: ['PATCH'],
+						updateMode: ['json'],
 					},
 				},
 				required: true,
 				description: 'The JSON object containing fields and values to update',
+			},			
+			{
+				displayName: 'Columns to Update',
+				name: 'columnsToUpdate',
+				type: 'fixedCollection',
+				typeOptions: {
+					multipleValues: true,
+				},
+				default: {},
+				displayOptions: {
+					show: {
+						operation: ['PATCH'],
+						updateMode: ['column'],
+					},
+				},
+				options: [
+					{
+						displayName: 'Column',
+						name: 'columnValues',
+						values: [
+							{
+								displayName: 'Column Name',
+								name: 'columnName',
+								type: 'options',
+								typeOptions: {
+									loadOptionsMethod: 'getEntityColumns',
+								},
+								default: '',
+								description: 'Select the column to update',
+							},
+							{
+								displayName: 'Column Value',
+								name: 'columnValue',
+								type: 'string',
+								default: '',
+								description: 'Enter the value for the selected column',
+							},
+						],
+					},
+				],
 			},
 		],
 	};
@@ -125,15 +178,32 @@ export class Dataverse implements INodeType {
 			async getEntityList(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
 				const credentials = await this.getCredentials('dataverseAuth');
 				const auth = new dataverseAuth();
-				await auth.authenticate(credentials, { url: '' }); // Authenticate
-
-				const tables = await auth.ListTables(); // Assuming this method returns the list of tables
-
-				// Convert tables to dropdown options
+				await auth.authenticate(credentials, { url: '' });
+	
+				const tables = await auth.ListTables();
+	
 				return tables.tables.map((table: { logicalName: string, displayName: string }) => ({
 					name: `${table.displayName} - (${table.logicalName})`,
 					value: table.logicalName,
 				}));
+			},
+	
+			async getEntityColumns(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+				const entityName = this.getCurrentNodeParameter('entityName') as string;
+				if (!entityName) {
+					return [];
+				}
+	
+				const credentials = await this.getCredentials('dataverseAuth');
+				const auth = new dataverseAuth();
+				await auth.authenticate(credentials, { url: '' });
+	
+				const columns = await auth.ListEntityColumns(entityName); // Fetch columns for the selected entity
+	
+				return columns.columns.map((table: { logicalName: string, displayName: string }) => ({
+					name: `${table.displayName} - (${table.logicalName})`,
+					value: table.logicalName,
+				}));			
 			},
 		},
 	};

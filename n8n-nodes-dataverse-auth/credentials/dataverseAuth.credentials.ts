@@ -19,7 +19,7 @@ export class dataverseAuth implements ICredentialType {
         const match = fetchXml.match(/<entity name="([^"]+)"/);
         return match ? match[1] : null;
     }
-
+    
     async authenticate(credentials: ICredentialDataDecryptedObject, requestOptions: IHttpRequestOptions): Promise<IHttpRequestOptions> {
         this.credentials = credentials;
         const { tenantId, clientId, clientSecret, scope } = credentials as { tenantId: string, clientId: string, clientSecret: string, scope: string };
@@ -93,6 +93,35 @@ export class dataverseAuth implements ICredentialType {
         }
     }
 
+    async ListEntityColumns(entityName: string): Promise<{ columns: any[] }> {
+        if (!this.accessToken || !this.scope) {
+            throw new Error("Authentication required before retrieving entity columns.");
+        }
+    
+        const apiUrl = `${this.scope}/api/data/v9.2/EntityDefinitions(LogicalName='${entityName}')/Attributes?$select=LogicalName,DisplayName`;
+    
+        try {
+            const response = await axios.get(apiUrl, {
+                headers: {
+                    Authorization: `Bearer ${this.accessToken}`,
+                    'Content-Type': 'application/json',
+                    'OData-MaxPageSize': '5000',
+                },
+            });
+    
+            // Extracting logical names and display names of columns
+            const columns = response.data.value.map((attribute: any) => ({
+                logicalName: attribute.LogicalName,
+                displayName: attribute.DisplayName?.UserLocalizedLabel?.Label || attribute.LogicalName,
+            }));
+    
+            return { columns };
+        } catch (error: any) {
+            throw new Error(`Dataverse API error: ${error.response?.status} - ${error.response?.statusText}. Details: ${JSON.stringify(error.response?.data)}`);
+        }
+    }
+    
+    
     async ListTables(): Promise<any> {
         if (!this.accessToken || !this.scope) {
             throw new Error("Authentication required before retrieving tables.");
