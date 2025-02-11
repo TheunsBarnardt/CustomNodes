@@ -13,15 +13,15 @@ import { dataverseAuth } from '../credentials/dataverseAuth.credentials';
 
 export class Dataverse implements INodeType {
 	description: INodeTypeDescription = {
-		displayName: 'Dataverse Auth',
+		displayName: 'Dataverse',
 		name: 'dataverse',
-		icon: 'file:Dataverse_scalable.svg',
+		icon: 'file:./resources/Dataverse_scalable.svg',
 		group: ['transform'],
 		version: 1,
-		description: 'JWT',
+		description: 'Dataverse',
 		subtitle: '={{ $parameter["operation"] }}',
 		defaults: {
-			name: 'JWT',
+			name: 'Dataverse',
 		},
 		inputs: ['main' as NodeConnectionType],
 		outputs: ['main'as NodeConnectionType],
@@ -40,49 +40,78 @@ export class Dataverse implements INodeType {
 				noDataExpression: true,
 				options: [
                     {
-                        name: 'GET',
+                        name: 'Get Data',
                         value: 'GET',
                         action: 'Retrieve data',
-                    },
+                    },                  
                     {
-                        name: 'POST',
-                        value: 'POST',
-                        action: 'Create data',
-                    },
-                    {
-                        name: 'PUT',
-                        value: 'PUT',
-                        action: 'Update data',
-                    },
-                    {
-                        name: 'PATCH',
+                        name: 'Update Record',
                         value: 'PATCH',
-                        action: 'Partially update data',
+                        action: 'Update record',
                     },
                     {
-                        name: 'DELETE',
+                        name: 'Delete Record',
                         value: 'DELETE',
-                        action: 'Delete data',
+                        action: 'Delete record',
                     },
                 ],
                 default: 'GET',
-			},	
+			},			
 			{
-				displayName: 'Entity Logical Name',
-				name: 'entityLogicalName',
-				type: 'string',
-				default: '',
-				description: 'Entity Logical Name',
-				required: true,				
-			},		
-			{
-				displayName: 'Query',
-				name: 'query',
+				displayName: 'FetchXML Query',
+				name: 'fetchXML',
 				type: 'string',
 				typeOptions:{editor :'jsEditor' },
 				default: '',
+				displayOptions: {
+					show: {
+						operation: ['GET'],
+					},
+				},
 				description: 'Webapi Query',
 				required: true,				
+			},
+			{
+				displayName: 'Entity Name',
+				name: 'entityName',
+				type: 'string',
+				default: '',
+				displayOptions: {
+					show: {
+						operation: ['PATCH'],
+					},
+				},
+				required: true,
+				description: 'The logical name of the Dataverse entity (e.g., contacts, accounts)',
+			},
+			{
+				displayName: 'Record ID',
+				name: 'recordId',
+				type: 'string',
+				default: '',
+				displayOptions: {
+					show: {
+						operation: ['PATCH'],
+					},
+				},
+				required: true,
+				description: 'The unique identifier (GUID) of the record to update',
+			},
+			{
+				displayName: 'Json Data',
+				name: 'updateData',
+				type: 'json',
+				typeOptions: {
+					alwaysOpenEditWindow: true,
+				},
+				default: '{}',
+				displayOptions: {
+					show: {
+						operation: ['PATCH'],
+					},
+				},
+				required: true,
+				description: 'The JSON object containing fields and values to update',
 			},
 		],
 	};
@@ -91,30 +120,38 @@ export class Dataverse implements INodeType {
 		const items = this.getInputData();
 		const returnData: INodeExecutionData[] = [];
 		const operation = this.getNodeParameter('operation', 0);
-		const credentials = await this.getCredentials('dataverseAuth');		
+		const credentials = await this.getCredentials('dataverseAuth');
 		const auth = new dataverseAuth();
-        await auth.authenticate(credentials, {
-			url: ''
-		}); // Authenticate using client credentials
-
-
+		await auth.authenticate(credentials, { url: '' });
+	
 		for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
-			try {				
-				const entityLogicalName = this.getNodeParameter('entityLogicalName', itemIndex) as string;	
-				const query = this.getNodeParameter('query', itemIndex) as string;			
+			try {
+				const query = this.getNodeParameter('fetchXML', itemIndex) as string;
+	
 				if (operation === 'GET') {
-
-					const data = await auth.GetData(entityLogicalName,query);
-					
-                    returnData.push({
-                        json: data as IDataObject, // Push the actual parsed data
-                        pairedItem: itemIndex,
-                    });
-				}				
-
+					const data = await auth.GetData(query);
+					returnData.push({
+						json: data as IDataObject,
+						pairedItem: itemIndex,
+					});
+				} else if (operation === 'PATCH') {
+					const entityName = this.getNodeParameter('entityName', itemIndex) as string;
+					const recordId = this.getNodeParameter('recordId', itemIndex) as string;
+					const updateData = this.getNodeParameter('updateData', itemIndex) as IDataObject;
+	
+					const updateResponse = await auth.UpdateData(entityName, recordId, updateData);
+					returnData.push({
+						json: updateResponse as IDataObject,
+						pairedItem: itemIndex,
+					});
+				}
 			} catch (error) {
 				if (this.continueOnFail()) {
-					items.push({ json: this.getInputData(itemIndex)[0].json, error: error as NodeOperationError, pairedItem: itemIndex });
+					items.push({
+						json: this.getInputData(itemIndex)[0].json,
+						error: error as NodeOperationError,
+						pairedItem: itemIndex,
+					});
 				} else {
 					if ((error as NodeOperationError).context) {
 						(error as NodeOperationError).context.itemIndex = itemIndex;
@@ -126,7 +163,6 @@ export class Dataverse implements INodeType {
 				}
 			}
 		}
-
 		return this.prepareOutputData(returnData);
 	}
 }

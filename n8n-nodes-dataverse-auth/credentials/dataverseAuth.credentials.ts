@@ -1,6 +1,7 @@
 import {
     ICredentialDataDecryptedObject,
     ICredentialType,
+    IDataObject,
     IHttpRequestOptions,
     INodeProperties,
 } from 'n8n-workflow';
@@ -14,6 +15,10 @@ export class dataverseAuth implements ICredentialType {
     private credentials: ICredentialDataDecryptedObject | null = null;
     private tokenExpiry: number | null = null;
   
+    private extractEntityNameFromFetchXml(fetchXml: string): string | null {
+        const match = fetchXml.match(/<entity name="([^"]+)"/);
+        return match ? match[1] : null;
+    }
 
     async authenticate(credentials: ICredentialDataDecryptedObject, requestOptions: IHttpRequestOptions): Promise<IHttpRequestOptions> {
 		debugger;
@@ -66,7 +71,30 @@ export class dataverseAuth implements ICredentialType {
         }
     }
 
-    async GetData(entityLogicalName: string, fetchXml: string): Promise<any> {
+    async UpdateData(entityName: string, recordId: string, updateData: IDataObject): Promise<any> {
+        if (!this.accessToken || !this.scope) {
+            throw new Error("Authentication required before updating data.");
+        }
+    
+        const fullApiUrl = `${this.scope}/api/data/v9.2/${entityName}(${recordId})`;
+        console.log("Update API URL:", fullApiUrl);
+    
+        try {
+            const response = await axios.patch(fullApiUrl, updateData, {
+                headers: {
+                    Authorization: `Bearer ${this.accessToken}`,
+                    'Content-Type': 'application/json',
+                    'OData-MaxPageSize': '5000',
+                    'Prefer': 'return=representation',
+                },
+            });
+            return response.data;
+        } catch (error: any) {
+            throw new Error(`Dataverse API error: ${error.response?.status} - ${error.response?.statusText}. Details: ${JSON.stringify(error.response?.data)}`);
+        }
+    }
+
+    async GetData(fetchXml: string): Promise<any> {
         if (!this.accessToken || !this.scope || !this.credentials) {
             throw new Error("Authentication required before fetching data.");
         }
@@ -83,8 +111,13 @@ export class dataverseAuth implements ICredentialType {
             this.tokenExpiry = Date.now() + (tokenResponse.expires_in ? parseInt(tokenResponse.expires_in, 10) : 3600) * 1000;
             console.log("Token Refreshed!");
         }
-    
-        const fullApiUrl = `${this.scope}/api/data/v9.2/${entityLogicalName}?fetchXml=${fetchXml}`;
+
+        const entityLogicalName = this.extractEntityNameFromFetchXml(fetchXml);
+        if (!entityLogicalName) {
+            throw new Error("Failed to extract entity name from FetchXML.");
+        }
+
+        const fullApiUrl = `${this.scope}/api/data/v9.2/${entityLogicalName}s?fetchXml=${fetchXml}`;
         console.log("fullApiUrl: ", fullApiUrl);
     
         try {

@@ -18,6 +18,7 @@
   },
   "main": "index.js",
   "scripts": {
+    "setup": "npm run build --clean && npm link && n8n",
     "build": "tsc ",
     "dev": "tsc --watch",
     "format": "prettier nodes credentials --write",
