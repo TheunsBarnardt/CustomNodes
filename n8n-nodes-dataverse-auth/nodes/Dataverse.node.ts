@@ -1,4 +1,3 @@
-
 import {
 	IDataObject,
 	INodeExecutionData,
@@ -7,9 +6,10 @@ import {
 	INodeTypeDescription,
 	NodeConnectionType,
 	NodeOperationError,
+	ILoadOptionsFunctions,
+	INodePropertyOptions,
 } from 'n8n-workflow';
 import { dataverseAuth } from '../credentials/dataverseAuth.credentials';
-
 
 export class Dataverse implements INodeType {
 	description: INodeTypeDescription = {
@@ -24,7 +24,7 @@ export class Dataverse implements INodeType {
 			name: 'Dataverse',
 		},
 		inputs: ['main' as NodeConnectionType],
-		outputs: ['main'as NodeConnectionType],
+		outputs: ['main' as NodeConnectionType],
 		credentials: [
 			{
 				// eslint-disable-next-line n8n-nodes-base/node-class-description-credentials-name-unsuffixed
@@ -61,7 +61,7 @@ export class Dataverse implements INodeType {
 				displayName: 'FetchXML Query',
 				name: 'fetchXML',
 				type: 'string',
-				typeOptions:{editor :'jsEditor' },
+				typeOptions: { editor: 'jsEditor' },
 				default: '',
 				displayOptions: {
 					show: {
@@ -74,7 +74,10 @@ export class Dataverse implements INodeType {
 			{
 				displayName: 'Entity Name',
 				name: 'entityName',
-				type: 'string',
+				type: 'options',
+				typeOptions: {
+					loadOptionsMethod: 'getEntityList',
+				},
 				default: '',
 				displayOptions: {
 					show: {
@@ -82,7 +85,7 @@ export class Dataverse implements INodeType {
 					},
 				},
 				required: true,
-				description: 'The logical name of the Dataverse entity (e.g., contacts, accounts)',
+				description: 'Select the Dataverse entity (e.g., contacts, accounts)',
 			},
 			{
 				displayName: 'Record ID',
@@ -116,6 +119,26 @@ export class Dataverse implements INodeType {
 		],
 	};
 
+	// Adjust methods for loadOptions
+	methods = {
+		loadOptions: {
+			async getEntityList(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+				const credentials = await this.getCredentials('dataverseAuth');
+				const auth = new dataverseAuth();
+				await auth.authenticate(credentials, { url: '' }); // Authenticate
+
+				const tables = await auth.ListTables(); // Assuming this method returns the list of tables
+
+				// Convert tables to dropdown options
+				return tables.tables.map((table: { logicalName: string, displayName: string }) => ({
+					name: table.displayName,
+					value: table.logicalName,
+				}));
+			},
+		},
+	};
+
+	// The rest of your execute function remains as it is
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
 		const items = this.getInputData();
 		const returnData: INodeExecutionData[] = [];
@@ -123,11 +146,11 @@ export class Dataverse implements INodeType {
 		const credentials = await this.getCredentials('dataverseAuth');
 		const auth = new dataverseAuth();
 		await auth.authenticate(credentials, { url: '' });
-	
+
 		for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
 			try {
 				const query = this.getNodeParameter('fetchXML', itemIndex) as string;
-	
+
 				if (operation === 'GET') {
 					const data = await auth.GetData(query);
 					returnData.push({
@@ -138,7 +161,7 @@ export class Dataverse implements INodeType {
 					const entityName = this.getNodeParameter('entityName', itemIndex) as string;
 					const recordId = this.getNodeParameter('recordId', itemIndex) as string;
 					const updateData = this.getNodeParameter('updateData', itemIndex) as IDataObject;
-	
+
 					const updateResponse = await auth.UpdateData(entityName, recordId, updateData);
 					returnData.push({
 						json: updateResponse as IDataObject,

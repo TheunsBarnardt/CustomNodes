@@ -94,6 +94,33 @@ export class dataverseAuth implements ICredentialType {
         }
     }
 
+    async ListTables(): Promise<any> {
+        if (!this.accessToken || !this.scope) {
+            throw new Error("Authentication required before retrieving tables.");
+        }
+    
+        const apiUrl = `${this.scope}/api/data/v9.2/EntityDefinitions?$select=LogicalName,DisplayName`;
+    
+        try {
+            const response = await axios.get(apiUrl, {
+                headers: {
+                    Authorization: `Bearer ${this.accessToken}`,
+                    'Content-Type': 'application/json',
+                    'OData-MaxPageSize': '5000',
+                },
+            });
+    
+            // Extracting logical names and display names
+            const entities = response.data.value.map((entity: any) => ({
+                logicalName: entity.LogicalName,
+                displayName: entity.DisplayName?.UserLocalizedLabel?.Label || entity.LogicalName,
+            }));
+    
+            return { tables: entities };
+        } catch (error: any) {
+            throw new Error(`Dataverse API error: ${error.response?.status} - ${error.response?.statusText}. Details: ${JSON.stringify(error.response?.data)}`);
+        }
+    }
     async GetData(fetchXml: string): Promise<any> {
         if (!this.accessToken || !this.scope || !this.credentials) {
             throw new Error("Authentication required before fetching data.");
