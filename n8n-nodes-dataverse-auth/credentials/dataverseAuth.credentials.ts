@@ -16,7 +16,7 @@ export class dataverseAuth implements ICredentialType {
     private tokenExpiry: number | null = null;
   
     private extractEntityNameFromFetchXml(fetchXml: string): string | null {
-        const match = fetchXml.match(/<entity name="([^"]+)"/);
+        const match = fetchXml.match(/<entity name=['"]([^'"]+)['"]/);
         return match ? match[1] : null;
     }
     
@@ -149,6 +149,14 @@ export class dataverseAuth implements ICredentialType {
             throw new Error(`Dataverse API error: ${error.response?.status} - ${error.response?.statusText}. Details: ${JSON.stringify(error.response?.data)}`);
         }
     }
+
+    private modifyEntityLogicalName(entityLogicalName: string): string {
+        if (entityLogicalName.endsWith('s')) {
+            return entityLogicalName + 'es';
+        } else {
+            return entityLogicalName + 's';
+        }
+    }
     async GetData(fetchXml: string): Promise<any> {
         if (!this.accessToken || !this.scope || !this.credentials) {
             throw new Error("Authentication required before fetching data.");
@@ -171,8 +179,8 @@ export class dataverseAuth implements ICredentialType {
         if (!entityLogicalName) {
             throw new Error("Failed to extract entity name from FetchXML.");
         }
-
-        const fullApiUrl = `${this.scope}/api/data/v9.2/${entityLogicalName}s?fetchXml=${fetchXml}`;
+        const modifiedEntityLogicalName = this.modifyEntityLogicalName(entityLogicalName);
+        const fullApiUrl = `${this.scope}/api/data/v9.2/${modifiedEntityLogicalName}?fetchXml=${fetchXml}`;
         console.log("fullApiUrl: ", fullApiUrl);
     
         try {
