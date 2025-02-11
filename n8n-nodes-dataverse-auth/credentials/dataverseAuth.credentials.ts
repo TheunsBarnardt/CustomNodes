@@ -21,7 +21,6 @@ export class dataverseAuth implements ICredentialType {
     }
 
     async authenticate(credentials: ICredentialDataDecryptedObject, requestOptions: IHttpRequestOptions): Promise<IHttpRequestOptions> {
-		debugger;
         this.credentials = credentials;
         const { tenantId, clientId, clientSecret, scope } = credentials as { tenantId: string, clientId: string, clientSecret: string, scope: string };
         this.scope = scope;

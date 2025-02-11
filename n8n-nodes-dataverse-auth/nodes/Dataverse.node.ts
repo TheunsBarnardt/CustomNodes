@@ -131,7 +131,7 @@ export class Dataverse implements INodeType {
 
 				// Convert tables to dropdown options
 				return tables.tables.map((table: { logicalName: string, displayName: string }) => ({
-					name: table.displayName,
+					name: `${table.displayName} - (${table.logicalName})`,
 					value: table.logicalName,
 				}));
 			},
