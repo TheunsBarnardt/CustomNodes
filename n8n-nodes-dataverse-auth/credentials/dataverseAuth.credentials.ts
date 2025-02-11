@@ -157,7 +157,7 @@ export class dataverseAuth implements ICredentialType {
             return entityLogicalName + 's';
         }
     }
-    async GetData(fetchXml: string): Promise<any> {
+    async GetData(type :string,query: string): Promise<any> {
         if (!this.accessToken || !this.scope || !this.credentials) {
             throw new Error("Authentication required before fetching data.");
         }
@@ -175,12 +175,33 @@ export class dataverseAuth implements ICredentialType {
             console.log("Token Refreshed!");
         }
 
-        const entityLogicalName = this.extractEntityNameFromFetchXml(fetchXml);
+        if(type == "fetchxml")
+        {
+        const entityLogicalName = this.extractEntityNameFromFetchXml(query);
         if (!entityLogicalName) {
             throw new Error("Failed to extract entity name from FetchXML.");
         }
         const modifiedEntityLogicalName = this.modifyEntityLogicalName(entityLogicalName);
-        const fullApiUrl = `${this.scope}/api/data/v9.2/${modifiedEntityLogicalName}?fetchXml=${fetchXml}`;
+        const fullApiUrl = `${this.scope}/api/data/v9.2/${modifiedEntityLogicalName}?fetchXml=${query}`;
+        console.log("fullApiUrl: ", fullApiUrl);
+    
+        try {
+            const response = await axios.get(fullApiUrl, {
+                headers: {
+                    Authorization: `Bearer ${this.accessToken}`,
+                    'Content-Type': 'application/json',
+                    'OData-MaxPageSize': '5000',
+                    'Prefer': 'odata.include-annotations="*"',
+                },
+            });
+    
+            return response.data;
+        } catch (error: any) {
+            throw new Error(`Dataverse API error: ${error.response?.status} - ${error.response?.statusText}. Details: ${JSON.stringify(error.response?.data)}`);
+        }
+    }else
+    {
+        const fullApiUrl = `${this.scope}/api/data/v9.2/${query}`;
         console.log("fullApiUrl: ", fullApiUrl);
     
         try {
@@ -198,6 +219,7 @@ export class dataverseAuth implements ICredentialType {
             throw new Error(`Dataverse API error: ${error.response?.status} - ${error.response?.statusText}. Details: ${JSON.stringify(error.response?.data)}`);
         }
     }
+}
 
     private isTokenExpired(): boolean {
         return this.tokenExpiry === null || Date.now() >= this.tokenExpiry;

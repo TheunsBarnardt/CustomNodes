@@ -56,10 +56,27 @@ export class Dataverse implements INodeType {
                     },
                 ],
                 default: 'GET',
-			},			
+			},	
 			{
-				displayName: 'FetchXML Query',
-				name: 'fetchXML',
+				displayName: 'Type',
+				name: 'type',
+				type: 'options',
+				options: [
+					{ name: 'FetchXML', value: 'fetchxml' },
+					{ name: 'OData', value: 'odata' },
+				],
+				default: 'fetchxml',
+				displayOptions: {
+					show: {
+						operation: ['GET'],
+					},
+				},
+				required: true,
+				description: 'Select the query type: FetchXML or OData',
+			},
+			{
+				displayName: 'Query',
+				name: 'getQuery',
 				type: 'string',
 				typeOptions: { editor: 'jsEditor' },
 				default: '',
@@ -70,6 +87,19 @@ export class Dataverse implements INodeType {
 				},
 				description: 'Webapi Query',
 				required: true,				
+			},			
+			{
+				displayName: 'Record Id',
+				name: 'recordId',
+				type: 'string',				
+				default: '',
+				displayOptions: {
+					show: {
+						operation: ['PATCH'],
+					},
+				},
+				required: true,
+				description: 'Record Id of the record to update',
 			},
 			{
 				displayName: 'Entity Name',
@@ -219,15 +249,17 @@ export class Dataverse implements INodeType {
 
 		for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
 			try {
-				const query = this.getNodeParameter('fetchXML', itemIndex) as string;
+				const query = this.getNodeParameter('getQuery', itemIndex) as string;
+				const type = this.getNodeParameter('type', itemIndex) as string;
 
 				if (operation === 'GET') {
-					const data = await auth.GetData(query);
+					const data = await auth.GetData(type,query);
 					returnData.push({
 						json: data as IDataObject,
 						pairedItem: itemIndex,
 					});
 				} else if (operation === 'PATCH') {
+					debugger;
 					const entityName = this.getNodeParameter('entityName', itemIndex) as string;
 					const recordId = this.getNodeParameter('recordId', itemIndex) as string;
 					const updateData = this.getNodeParameter('updateData', itemIndex) as IDataObject;
