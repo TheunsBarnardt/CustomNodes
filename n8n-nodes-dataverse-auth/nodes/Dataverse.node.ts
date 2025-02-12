@@ -256,22 +256,35 @@ export class Dataverse implements INodeType {
 
 		for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
 			try {
-				const query = this.getNodeParameter('getQuery', itemIndex) as string;
-				const type = this.getNodeParameter('type', itemIndex) as string;
-
+				
 				if (operation === 'GET') {
+					const query = this.getNodeParameter('getQuery', itemIndex) as string;
+					const type = this.getNodeParameter('type', itemIndex) as string;			
+
 					const data = await auth.GetData(type,query);
 					returnData.push({
 						json: data as IDataObject,
 						pairedItem: itemIndex,
 					});
 				} else if (operation === 'PATCH') {
-					debugger;
 					const entityName = this.getNodeParameter('entityName', itemIndex) as string;
 					const recordId = this.getNodeParameter('recordId', itemIndex) as string;
-					const updateData = this.getNodeParameter('updateData', itemIndex) as IDataObject;
-
-					const updateResponse = await auth.UpdateData(entityName, recordId, updateData);
+					const updateMode = this.getNodeParameter('updateMode', itemIndex) as string;
+					debugger;
+					// Initialize payload parts
+					let jsonData: IDataObject = {};
+					let columnsData: IDataObject | undefined;
+				
+					if (updateMode === 'json') {
+						// Use the raw JSON data provided
+						jsonData = this.getNodeParameter('updateData', itemIndex) as IDataObject;
+					} else if (updateMode === 'column') {
+						// Use the fixed collection of columns
+						columnsData = this.getNodeParameter('columnsToUpdate', itemIndex) as IDataObject;
+					}
+				
+					// Pass both payloads to the UpdateData function; the function will merge them
+					const updateResponse = await auth.UpdateData(entityName, recordId, jsonData, columnsData);
 					returnData.push({
 						json: updateResponse as IDataObject,
 						pairedItem: itemIndex,

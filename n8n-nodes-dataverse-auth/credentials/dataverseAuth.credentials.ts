@@ -138,21 +138,63 @@ export class dataverseAuth implements ICredentialType {
     }
 
     // API calls using the shared axios instance
-
-    async UpdateData(entityName: string, recordId: string, updateData: IDataObject): Promise<any> {
+    async UpdateData(
+        entityName: string,
+        recordId: string,
+        updateData: IDataObject,
+        columnsToUpdate?: IDataObject
+    ): Promise<any> {
+        debugger;
         await this.ensureAuthenticated();
         if (!this.axiosInstance) throw new Error('Axios instance not available');
+    
+        // Start with the updateData payload (if provided)
+        let body: IDataObject = {};
+        if (updateData && Object.keys(updateData).length > 0) {
+            body = { ...updateData };
+        }
+    
+        // Merge in columns from columnsToUpdate (if provided)
+        // Expected format: { columnValues: [ { columnName: string, columnValue: string }, ... ] }
+        if (
+            columnsToUpdate &&
+            columnsToUpdate.columnValues &&
+            Array.isArray(columnsToUpdate.columnValues)
+        ) {
+            for (const columnUpdate of columnsToUpdate.columnValues) {
+                if (columnUpdate.columnName) {
+                    body[columnUpdate.columnName] = columnUpdate.columnValue;
+                }
+            }
+        }
+        const databody = JSON.stringify(body);   
+        const modifiedEntityLogicalName = this.modifyEntityLogicalName(entityName);     
+        const fullApiUrl = `/api/data/v9.2/${modifiedEntityLogicalName}(${recordId})`;
+        const headers = {
+            "OData-MaxVersion": "4.0",
+            "Content-Type": "application/json; charset=utf-8",
+            "Accept": "application/json",
+            "Prefer": "odata.include-annotations=*",
+        };
 
-        const fullApiUrl = `/api/data/v9.2/${entityName}(${recordId})`;
+        console.log('--- Dataverse PATCH Request Details ---');
+        console.log('Request URL:', this.axiosInstance.defaults.baseURL + fullApiUrl);
+        console.log('Request Headers:', headers);
+        console.log('Request Body:', databody);
+        console.log('---------------------------------------');
+
         try {
-            const response = await this.axiosInstance.patch(fullApiUrl, updateData, {
-                headers: { Prefer: 'return=representation' },
-            });
+            const response = await this.axiosInstance.patch(fullApiUrl, databody, { headers });
             return response.data;
         } catch (error: any) {
-            throw new Error(`Dataverse API error: ${error.response?.status} - ${error.response?.statusText}. Details: ${JSON.stringify(error.response?.data)}`);
+            throw new Error(
+                `Dataverse API error: ${error.response?.status} - ${error.response?.statusText}. Details: ${JSON.stringify(
+                    error.response?.data
+                )}`
+            );
         }
     }
+    
 
     async ListEntityColumns(entityName: string): Promise<{ columns: any[] }> {
         await this.ensureAuthenticated();
