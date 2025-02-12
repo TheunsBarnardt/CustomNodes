@@ -144,7 +144,6 @@ export class dataverseAuth implements ICredentialType {
         updateData: IDataObject,
         columnsToUpdate?: IDataObject
     ): Promise<any> {
-        debugger;
         await this.ensureAuthenticated();
         if (!this.axiosInstance) throw new Error('Axios instance not available');
     
@@ -176,12 +175,6 @@ export class dataverseAuth implements ICredentialType {
             "Accept": "application/json",
             "Prefer": "odata.include-annotations=*",
         };
-
-        console.log('--- Dataverse PATCH Request Details ---');
-        console.log('Request URL:', this.axiosInstance.defaults.baseURL + fullApiUrl);
-        console.log('Request Headers:', headers);
-        console.log('Request Body:', databody);
-        console.log('---------------------------------------');
 
         try {
             const response = await this.axiosInstance.patch(fullApiUrl, databody, { headers });

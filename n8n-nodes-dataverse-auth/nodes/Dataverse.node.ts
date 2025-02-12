@@ -270,7 +270,7 @@ export class Dataverse implements INodeType {
 					const entityName = this.getNodeParameter('entityName', itemIndex) as string;
 					const recordId = this.getNodeParameter('recordId', itemIndex) as string;
 					const updateMode = this.getNodeParameter('updateMode', itemIndex) as string;
-					debugger;
+
 					// Initialize payload parts
 					let jsonData: IDataObject = {};
 					let columnsData: IDataObject | undefined;
