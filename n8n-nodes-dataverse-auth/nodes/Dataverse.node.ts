@@ -40,8 +40,8 @@ export class Dataverse implements INodeType {
 				type: 'options',
 				noDataExpression: true,
 				options: [
-                    {
-                        name: 'Get Data',
+					{
+						name: 'Get Data',
                         value: 'GET',
                         action: 'Retrieve data',
                     },                  
@@ -51,13 +51,14 @@ export class Dataverse implements INodeType {
                         action: 'Update record',
                     },
                     {
-                        name: 'Delete Record',
+						name: 'Delete Record',
                         value: 'DELETE',
                         action: 'Delete record',
                     },
                 ],
                 default: 'GET',
 			},	
+			//Get
 			{
 				displayName: 'Type',
 				name: 'type',
@@ -65,6 +66,11 @@ export class Dataverse implements INodeType {
 				options: [
 					{ name: 'FetchXML', value: 'fetchxml' },
 					{ name: 'OData', value: 'odata' },
+					{
+						name: 'Column',
+						value: 'column',
+						description: 'Manually select and update specific columns',
+					},
 				],
 				default: 'fetchxml',
 				displayOptions: {
@@ -84,11 +90,13 @@ export class Dataverse implements INodeType {
 				displayOptions: {
 					show: {
 						operation: ['GET'],
+						type: ['odata','fetchxml'],
 					},
 				},
 				description: 'Webapi Query',
 				required: true,				
-			},			
+			},	
+			//Patch		
 			{
 				displayName: 'Record Id',
 				name: 'recordId',
@@ -103,24 +111,8 @@ export class Dataverse implements INodeType {
 				description: 'Record Id of the record to update',
 			},
 			{
-				displayName: 'Entity Name',
-				name: 'entityName',
-				type: 'options',
-				typeOptions: {
-					loadOptionsMethod: 'getEntityList',
-				},
-				default: '',
-				displayOptions: {
-					show: {
-						operation: ['PATCH'],
-					},
-				},
-				required: true,
-				description: 'Select the Dataverse entity (e.g., contacts, accounts)',
-			},
-			{
-				displayName: 'Update Mode',
-				name: 'updateMode',
+				displayName: 'Type',
+				name: 'type',
 				type: 'options',
 				options: [
 					{
@@ -141,8 +133,7 @@ export class Dataverse implements INodeType {
 					},
 				},
 				description: 'Choose how to update the record',
-			},
-			
+			},		
 			{
 				displayName: 'Json Data',
 				name: 'updateData',
@@ -154,15 +145,32 @@ export class Dataverse implements INodeType {
 				displayOptions: {
 					show: {
 						operation: ['PATCH'],
-						updateMode: ['json'],
+						type: ['json'],
 					},
 				},
 				required: true,
 				description: 'The JSON object containing fields and values to update',
+			},	
+			{
+				displayName: 'Entity Name',
+				name: 'entityName',
+				type: 'options',
+				typeOptions: {
+					loadOptionsMethod: 'getEntityList',
+				},
+				default: '',
+				displayOptions: {
+					show: {
+						operation: ['PATCH',"GET"],
+						type: ['column'],
+					},
+				},
+				required: true,
+				description: 'Select the Dataverse entity (e.g., contacts, accounts)',
 			},			
 			{
-				displayName: 'Columns to Update',
-				name: 'columnsToUpdate',
+				displayName: 'Columns',
+				name: 'column',
 				type: 'fixedCollection',
 				typeOptions: {
 					multipleValues: true,
@@ -171,7 +179,7 @@ export class Dataverse implements INodeType {
 				displayOptions: {
 					show: {
 						operation: ['PATCH'],
-						updateMode: ['column'],
+						type: ['column'],
 					},
 				},
 				options: [
@@ -196,6 +204,39 @@ export class Dataverse implements INodeType {
 								default: '',
 								description: 'Enter the value for the selected column',
 							},
+						],
+					},
+				],
+			},
+			{
+				displayName: 'Columns',
+				name: 'columnget',
+				type: 'fixedCollection',
+				typeOptions: {
+					multipleValues: true,
+				},
+				default: {},
+				displayOptions: {
+					show: {
+						operation: ["GET"],
+						type: ['column'],
+					},
+				},
+				options: [
+					{
+						displayName: 'Column',
+						name: 'columnValues',
+						values: [
+							{
+								displayName: 'Column Name',
+								name: 'columnName',
+								type: 'options',
+								typeOptions: {
+									loadOptionsMethod: 'getEntityColumns',
+								},
+								default: '',
+								description: 'Select the column to update',
+							}							
 						],
 					},
 				],
@@ -247,6 +288,7 @@ export class Dataverse implements INodeType {
 
 	// The rest of your execute function remains as it is
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
+		debugger;
 		const items = this.getInputData();
 		const returnData: INodeExecutionData[] = [];
 		const operation = this.getNodeParameter('operation', 0);
@@ -257,30 +299,54 @@ export class Dataverse implements INodeType {
 		for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
 			try {
 				
-				if (operation === 'GET') {
-					const query = this.getNodeParameter('getQuery', itemIndex) as string;
-					const type = this.getNodeParameter('type', itemIndex) as string;			
+				const type = this.getNodeParameter('type', itemIndex) as string;	
+				let columnsData: IDataObject | undefined;
+				let query: string | undefined;
+				let entityName: string = '';
 
-					const data = await auth.GetData(type,query);
+				if (operation === 'GET') {
+
+					if (type === 'odata' || type === 'fetchxml') {
+						query = this.getNodeParameter('getQuery', itemIndex) as string;
+
+						// Use the raw JSON data provided
+					} else if (type === 'column') {
+						debugger;
+						entityName = this.getNodeParameter('entityName', itemIndex) as string;
+						columnsData = this.getNodeParameter('columnget', itemIndex) as IDataObject;
+						if (columnsData?.columnValues) {
+							if (Array.isArray(columnsData.columnValues)) {
+								query = columnsData.columnValues.map( (col) => `${col.columnName} `).join(',');
+							} else {
+								throw new Error('Column values are not in the expected format');
+							}
+						} else {
+							throw new Error('Column values are missing');
+						}
+						
+					}
+
+					const data = await auth.GetData(type,entityName, query || '');
 					returnData.push({
 						json: data as IDataObject,
 						pairedItem: itemIndex,
 					});
+					
+
 				} else if (operation === 'PATCH') {
 					const entityName = this.getNodeParameter('entityName', itemIndex) as string;
 					const recordId = this.getNodeParameter('recordId', itemIndex) as string;
-					const updateMode = this.getNodeParameter('updateMode', itemIndex) as string;
+					
 
 					// Initialize payload parts
 					let jsonData: IDataObject = {};
-					let columnsData: IDataObject | undefined;
 				
-					if (updateMode === 'json') {
+					if (type === 'json') {
 						// Use the raw JSON data provided
 						jsonData = this.getNodeParameter('updateData', itemIndex) as IDataObject;
-					} else if (updateMode === 'column') {
+					} else if (type === 'column') {
 						// Use the fixed collection of columns
-						columnsData = this.getNodeParameter('columnsToUpdate', itemIndex) as IDataObject;
+						columnsData = this.getNodeParameter('columns', itemIndex) as IDataObject;
 					}
 				
 					// Pass both payloads to the UpdateData function; the function will merge them

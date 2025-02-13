@@ -234,9 +234,10 @@ export class dataverseAuth implements ICredentialType {
         return entityLogicalName + (entityLogicalName.endsWith('s') ? 'es' : 's');
     }
 
-    async GetData(type: string, query: string): Promise<any> {
+    async GetData(type: string,entityName: string, query: string): Promise<any> {
         await this.ensureAuthenticated();
         if (!this.axiosInstance) throw new Error('Axios instance not available');
+        let fullApiUrl = '';
 
         if (type === "fetchxml") {
             const entityLogicalName = this.extractEntityNameFromFetchXml(query);
@@ -244,27 +245,23 @@ export class dataverseAuth implements ICredentialType {
                 throw new Error("Failed to extract entity name from FetchXML.");
             }
             const modifiedEntityLogicalName = this.modifyEntityLogicalName(entityLogicalName);
-            const fullApiUrl = `/api/data/v9.2/${modifiedEntityLogicalName}?fetchXml=${encodeURIComponent(query)}`;
-            try {
-                const response = await this.axiosInstance.get(fullApiUrl, {
-                    headers: { Prefer: 'odata.include-annotations="*"' },
-                });
-                return response.data;
-            } catch (error: any) {
-                throw new Error(`Dataverse API error: ${error.response?.status} - ${error.response?.statusText}. Details: ${JSON.stringify(error.response?.data)}`);
-            }
-        } else {
-            // For OData queries, assume 'query' is the relative path
-            const fullApiUrl = `/api/data/v9.2/${query}`;
-            try {
-                const response = await this.axiosInstance.get(fullApiUrl, {
-                    headers: { Prefer: 'odata.include-annotations="*"' },
-                });
-                return response.data;
-            } catch (error: any) {
-                throw new Error(`Dataverse API error: ${error.response?.status} - ${error.response?.statusText}. Details: ${JSON.stringify(error.response?.data)}`);
-            }
+            fullApiUrl = `/api/data/v9.2/${modifiedEntityLogicalName}?fetchXml=${encodeURIComponent(query)}`;           
+        } else  if (type === "odata") {
+             fullApiUrl = `/api/data/v9.2/${query}`;   
+        } else if (type === "column") {
+            const modifiedEntityLogicalName = this.modifyEntityLogicalName(entityName);
+            fullApiUrl = `/api/data/v9.2/${modifiedEntityLogicalName}?$select=${query}`;
+        } 
+        try {
+            console.log(fullApiUrl);
+            const response = await this.axiosInstance.get(fullApiUrl, {
+                headers: { Prefer: 'odata.include-annotations="*"' },
+            });
+            return response.data;
+        } catch (error: any) {
+            throw new Error(`Dataverse API error: ${error.response?.status} - ${error.response?.statusText}. Details: ${JSON.stringify(error.response?.data)}`);
         }
+        
     }
 
     // ICredentialType Metadata
