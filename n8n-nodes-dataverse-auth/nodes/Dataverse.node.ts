@@ -50,11 +50,11 @@ export class Dataverse implements INodeType {
                         value: 'PATCH',
                         action: 'Update record',
                     },
-                    {
-						name: 'Delete Record',
-                        value: 'DELETE',
-                        action: 'Delete record',
-                    },
+					{
+						name: 'Get Lookup from OptionSet',
+                        value: 'optionset',
+                        action: 'Retrieve lookup data from OptionSet',
+                    },  
                 ],
                 default: 'GET',
 			},	
@@ -164,6 +164,7 @@ export class Dataverse implements INodeType {
 						operation: ['PATCH',"GET"],
 						type: ['column'],
 					},
+					
 				},
 				required: true,
 				description: 'Select the Dataverse entity (e.g., contacts, accounts)',
@@ -241,6 +242,35 @@ export class Dataverse implements INodeType {
 					},
 				],
 			},
+			//optionset
+			{
+				displayName: 'Entity Name',
+				name: 'entityNameoptionset',
+				type: 'options',
+				typeOptions: {
+					loadOptionsMethod: 'getEntityList',
+				},
+				default: '',
+				displayOptions: {
+					show: {
+						operation: ["optionset"]				
+					},
+				},
+				required: true,
+				description: 'Select the Dataverse entity (e.g., contacts, accounts)',
+			},		
+			{
+				displayName: 'Attribute Name',
+				name: 'attributeName',
+				type: 'string',
+				default: '',
+				displayOptions: {
+					show: {
+						operation: ['optionset'],
+					},
+				},
+				description: 'Enter the attribute name for the OptionSet',
+			},
 		],
 	};
 
@@ -299,13 +329,14 @@ export class Dataverse implements INodeType {
 		for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
 			try {
 				
-				const type = this.getNodeParameter('type', itemIndex) as string;	
+				let type :string | '';
 				let columnsData: IDataObject | undefined;
 				let query: string | undefined;
 				let entityName: string = '';
 
 				if (operation === 'GET') {
 
+					type = this.getNodeParameter('type', itemIndex) as string;	
 					if (type === 'odata' || type === 'fetchxml') {
 						query = this.getNodeParameter('getQuery', itemIndex) as string;
 
@@ -336,7 +367,7 @@ export class Dataverse implements INodeType {
 				} else if (operation === 'PATCH') {
 					const entityName = this.getNodeParameter('entityName', itemIndex) as string;
 					const recordId = this.getNodeParameter('recordId', itemIndex) as string;
-					
+					type = this.getNodeParameter('type', itemIndex) as string;	
 
 					// Initialize payload parts
 					let jsonData: IDataObject = {};
@@ -353,6 +384,37 @@ export class Dataverse implements INodeType {
 					const updateResponse = await auth.UpdateData(entityName, recordId, jsonData, columnsData);
 					returnData.push({
 						json: updateResponse as IDataObject,
+						pairedItem: itemIndex,
+					});
+				}
+				else if (operation === 'optionset') {
+					debugger;		
+					const entityNameoptionset = this.getNodeParameter('entityNameoptionset', itemIndex) as string;			
+					const attributeName = this.getNodeParameter('attributeName', itemIndex) as string;
+					
+					query = `EntityDefinitions(LogicalName='${entityNameoptionset}')/Attributes(LogicalName='${attributeName}')/Microsoft.Dynamics.CRM.PicklistAttributeMetadata?$select=LogicalName,DisplayName&$expand=OptionSet($select=Options)`;
+					console.log(query);
+					const data = await auth.GetData('odata', '', query);
+					
+					let output: IDataObject;
+					if (data.OptionSet && data.OptionSet.Options) {
+						const options = data.OptionSet.Options.map((entry: any) => ({
+							Id: entry.Value,
+							Name: entry.Label.LocalizedLabels[0].Label,
+						}));
+						output = { options };
+					} else if (data.value && data.value.length > 0 && data.value[0].OptionSet && data.value[0].OptionSet.Options) {
+						const options = data.value[0].OptionSet.Options.map((entry: any) => ({
+							Id: entry.Value,
+							Name: entry.Label.LocalizedLabels[0].Label,
+						}));
+						output = { options };
+					} else {
+						output = data;
+					}
+					
+					returnData.push({
+						json: output,
 						pairedItem: itemIndex,
 					});
 				}
