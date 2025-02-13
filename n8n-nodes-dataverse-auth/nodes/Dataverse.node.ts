@@ -54,6 +54,11 @@ export class Dataverse implements INodeType {
 						name: 'Get Lookup from OptionSet',
                         value: 'optionset',
                         action: 'Retrieve lookup data from OptionSet',
+                    },
+					{
+						name: 'Get Lookup from Global Option Set Definitions',
+                        value: 'globaloptionset',
+                        action: 'Retrieve lookup data from GlobalOptionSetDefinitions',
                     },  
                 ],
                 default: 'GET',
@@ -271,6 +276,18 @@ export class Dataverse implements INodeType {
 				},
 				description: 'Enter the attribute name for the OptionSet',
 			},
+	        {
+				displayName: 'Attribute Name',
+				name: 'globalattributeName',
+				type: 'string',
+				default: '',
+				displayOptions: {
+					show: {
+						operation: ['globaloptionset'],
+					},
+				},
+				description: 'Enter the attribute name for the OptionSet',
+			},
 		],
 	};
 
@@ -318,7 +335,7 @@ export class Dataverse implements INodeType {
 
 	// The rest of your execute function remains as it is
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
-		debugger;
+
 		const items = this.getInputData();
 		const returnData: INodeExecutionData[] = [];
 		const operation = this.getNodeParameter('operation', 0);
@@ -341,8 +358,7 @@ export class Dataverse implements INodeType {
 						query = this.getNodeParameter('getQuery', itemIndex) as string;
 
 						// Use the raw JSON data provided
-					} else if (type === 'column') {
-						debugger;
+					} else if (type === 'column') {	
 						entityName = this.getNodeParameter('entityName', itemIndex) as string;
 						columnsData = this.getNodeParameter('columnget', itemIndex) as IDataObject;
 						if (columnsData?.columnValues) {
@@ -388,12 +404,12 @@ export class Dataverse implements INodeType {
 					});
 				}
 				else if (operation === 'optionset') {
-					debugger;		
+
 					const entityNameoptionset = this.getNodeParameter('entityNameoptionset', itemIndex) as string;			
 					const attributeName = this.getNodeParameter('attributeName', itemIndex) as string;
 					
 					query = `EntityDefinitions(LogicalName='${entityNameoptionset}')/Attributes(LogicalName='${attributeName}')/Microsoft.Dynamics.CRM.PicklistAttributeMetadata?$select=LogicalName,DisplayName&$expand=OptionSet($select=Options)`;
-					console.log(query);
+
 					const data = await auth.GetData('odata', '', query);
 					
 					let output: IDataObject;
@@ -404,6 +420,48 @@ export class Dataverse implements INodeType {
 						}));
 						output = { options };
 					} else if (data.value && data.value.length > 0 && data.value[0].OptionSet && data.value[0].OptionSet.Options) {
+						const options = data.value[0].OptionSet.Options.map((entry: any) => ({
+							Id: entry.Value,
+							Name: entry.Label.LocalizedLabels[0].Label,
+						}));
+						output = { options };
+					} else {
+						output = data;
+					}
+					
+					returnData.push({
+						json: output,
+						pairedItem: itemIndex,
+					});
+				}
+				else if (operation === 'globaloptionset') {
+		
+					const attributeName = this.getNodeParameter('globalattributeName', itemIndex) as string;
+					
+					query = `GlobalOptionSetDefinitions(Name='${attributeName}')`;
+
+					const data = await auth.GetData('odata', '', query);
+					
+					let output: IDataObject;
+	
+					// First, check if options are directly available in the response
+					if (data.Options && Array.isArray(data.Options)) {
+						const options = data.Options.map((entry: any) => ({
+							Id: entry.Value,
+							Name: entry.Label.LocalizedLabels[0].Label,
+						}));
+						output = { options };
+					} 
+					// Otherwise, if they are nested under OptionSet.Options
+					else if (data.OptionSet && data.OptionSet.Options) {
+						const options = data.OptionSet.Options.map((entry: any) => ({
+							Id: entry.Value,
+							Name: entry.Label.LocalizedLabels[0].Label,
+						}));
+						output = { options };
+					} 
+					// Sometimes the response is wrapped inside a value array
+					else if (data.value && data.value.length > 0 && data.value[0].OptionSet && data.value[0].OptionSet.Options) {
 						const options = data.value[0].OptionSet.Options.map((entry: any) => ({
 							Id: entry.Value,
 							Name: entry.Label.LocalizedLabels[0].Label,
