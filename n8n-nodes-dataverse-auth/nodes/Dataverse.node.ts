@@ -12,45 +12,49 @@ import {
 import { dataverseAuth } from "../credentials/dataverseAuth.credentials";
 
 export enum Operation {
-	GET = "GET",
-	PATCH = "PATCH",
-	OPTIONSET = "OPTIONSET",
-	GLOBALOPTIONSET = "GLOBALOPTIONSET",
-  }
-  
-  export enum OperationType {
-	FETCHXML = "FETCHXML",
-	ODATA = "ODATA",
-	COLUMN = "COLUMN",
-	JSON = "JSON",
-  }
+  GET = "GET",
+  PATCH = "PATCH",
+  OPTIONSET = "OPTIONSET",
+  GLOBALOPTIONSET = "GLOBALOPTIONSET",
+  ENTITY = "ENTITY",
+}
 
-  enum Properties {
-	//GET
-	GET_QUERY = "GET_QUERY",
-	GET_COLUMN = "GET_COLUMN",
-	GET_COLUMNNAME = "GET_COLUMNNAME",
-	GET_COLUMNVALUE = "GET_COLUMNVALUE",
-  
-	//PATCH
-	PATCH_RECORDID = "PATCH_RECORDID",
-	PATCH_DATA = "PATCH_DATA",
-	PATCH_COLUMNS = "PATCH_COLUMNS",
-	PATCH_COLUMN = "PATCH_COLUMN",
-	PATCH_COLUMNNAME = "PATCH_COLUMNNAME",
-	PATCH_COLUMNVALUE = "PATCH_COLUMNVALUE",
-  
-	//GET and PATCH
-	ENTITYNAME = "ENTITYNAME",
-  
-	OPTIONSET_ENTITYNAME = "OPTIONSET_ENTITYNAME",
-	OPTIONSET_ATTRIBUTENAME = "OPTIONSET_ATTRIBUTENAME",
-  
-	GLOBAL_ATTRIBUTENAME = "GLOBAL_ATTRIBUTENAME",
-  
-	TYPE = "TYPE",
-	OPERATION = "OPERATION",
-  }
+export enum OperationType {
+  FETCHXML = "FETCHXML",
+  ODATA = "ODATA",
+  COLUMN = "COLUMN",
+  JSON = "JSON",
+}
+
+enum Properties {
+  //GET
+  GET_QUERY = "GET_QUERY",
+  GET_COLUMN = "GET_COLUMN",
+  GET_COLUMNNAME = "GET_COLUMNNAME",
+  GET_COLUMNVALUE = "GET_COLUMNVALUE",
+
+  //PATCH
+  PATCH_RECORDID = "PATCH_RECORDID",
+  PATCH_DATA = "PATCH_DATA",
+  PATCH_COLUMNS = "PATCH_COLUMNS",
+  PATCH_COLUMN = "PATCH_COLUMN",
+  PATCH_COLUMNNAME = "PATCH_COLUMNNAME",
+  PATCH_COLUMNVALUE = "PATCH_COLUMNVALUE",
+
+  //GET and PATCH
+  ENTITYNAME = "ENTITYNAME",
+
+  OPTIONSET_ENTITYNAME = "OPTIONSET_ENTITYNAME",
+  OPTIONSET_ATTRIBUTENAME = "OPTIONSET_ATTRIBUTENAME",
+
+  GLOBAL_ATTRIBUTENAME = "GLOBAL_ATTRIBUTENAME",
+
+  ENTITY_ID = "ENTITY_ID",
+  ENTITY_NAME = "ENTITY_NAME",
+
+  TYPE = "TYPE",
+  OPERATION = "OPERATION",
+}
 
 export class Dataverse implements INodeType {
   description: INodeTypeDescription = {
@@ -100,13 +104,18 @@ export class Dataverse implements INodeType {
             value: Operation.GLOBALOPTIONSET,
             action: "Retrieve lookup data from GlobalOptionSetDefinitions",
           },
+          {
+            name: "Get lookup from entity",
+            value: Operation.ENTITY,
+            action: "Retrieve lookup data from table",
+          },
         ],
         default: Operation.GET,
       },
       //Get
       {
         displayName: "Type",
-		name: "type",
+        name: "type",
         type: "options",
         options: [
           { name: "FetchXML", value: OperationType.FETCHXML },
@@ -327,6 +336,57 @@ export class Dataverse implements INodeType {
         },
         description: "Enter the attribute name for the OptionSet",
       },
+      //entity lookup
+      {
+        displayName: "Entity Name",
+        name: Properties.ENTITYNAME,
+        type: "options",
+        typeOptions: {
+          loadOptionsMethod: "getEntityList",
+        },
+        default: "",
+        displayOptions: {
+          show: {
+            operation: [Operation.ENTITY],
+          },
+        },
+        required: true,
+        description: "Select the Dataverse entity (e.g., contacts, accounts)",
+      },
+      {
+        displayName: "Id column",
+        name: Properties.ENTITY_ID,
+        type: "options",
+        typeOptions: {
+          loadOptionsMethod: "getEntityColumns",
+          loadOptionsDependsOn: [Properties.ENTITYNAME],
+        },
+        displayOptions: {
+          show: {
+            operation: [Operation.ENTITY],
+          },
+        },
+        required: true,
+        default: "",
+        description: "Select the column that contains the id",
+      },
+      {
+        displayName: "Name column",
+        name: Properties.ENTITY_NAME,
+        type: "options",
+        typeOptions: {
+          loadOptionsMethod: "getEntityColumns",
+          loadOptionsDependsOn: [Properties.ENTITYNAME],
+        },
+        displayOptions: {
+          show: {
+            operation: [Operation.ENTITY],
+          },
+        },
+        required: true,
+        default: "",
+        description: "Select the column that contains the name",
+      },
     ],
   };
 
@@ -357,7 +417,10 @@ export class Dataverse implements INodeType {
       async getEntityColumns(
         this: ILoadOptionsFunctions
       ): Promise<INodePropertyOptions[]> {
-        const entityName = this.getCurrentNodeParameter(Properties.ENTITYNAME) as string;
+        debugger;
+        const entityName = this.getCurrentNodeParameter(
+          Properties.ENTITYNAME
+        ) as string;
         if (!entityName) return [];
         // Return cached columns if available
         const cachedColumns = dataverseAuth.getCachedEntityColumns(entityName);
@@ -382,7 +445,6 @@ export class Dataverse implements INodeType {
 
   // The rest of your execute function remains as it is
   async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
-    debugger;
     const items = this.getInputData();
     const returnData: INodeExecutionData[] = [];
     const credentials = await this.getCredentials("dataverseAuth");
@@ -397,55 +459,72 @@ export class Dataverse implements INodeType {
         let columnsData: IDataObject | undefined;
         let query: string | undefined;
 
-		const entityName = this.getNodeParameter(
-			Properties.ENTITYNAME,
-			itemIndex,
-			""
-		  ) as string;
+        const entityName = this.getNodeParameter(
+          Properties.ENTITYNAME,
+          itemIndex,
+          ""
+        ) as string;
 
-		  /* 
+        /* 
 		  const get_column = this.getNodeParameter(
 			Properties.GET_COLUMN,
 			itemIndex,
 			null
 		  ) as IDataObject;
  */
-		  const patch_recordid = this.getNodeParameter(
-			Properties.PATCH_RECORDID,
-			itemIndex,
-			""
-		  ) as string;
+        const patch_recordid = this.getNodeParameter(
+          Properties.PATCH_RECORDID,
+          itemIndex,
+          ""
+        ) as string;
 
-		  /*
+        /*
 		  const patch_columns = this.getNodeParameter(
 			Properties.PATCH_COLUMNS,
 			itemIndex,
 			null
 		  ) as IDataObject;*/
-		  const patch_data = this.getNodeParameter(
-			Properties.PATCH_DATA,
-			itemIndex,
-			null
-		  ) as IDataObject;
-  
-		  const optionset_entityname = this.getNodeParameter(
-			Properties.OPTIONSET_ENTITYNAME,
-			itemIndex,
-			""
-		  ) as string;
-		  
-		  const optionset_attributename = this.getNodeParameter(
-			Properties.OPTIONSET_ATTRIBUTENAME,
-			itemIndex,
-			""
-		  ) as string;
+        const patch_data = this.getNodeParameter(
+          Properties.PATCH_DATA,
+          itemIndex,
+          null
+        ) as IDataObject;
 
-		  const global_attributeName = this.getNodeParameter(
-			Properties.GLOBAL_ATTRIBUTENAME,
-			itemIndex,
-			""
-		  ) as string;
-  
+        const optionset_entityname = this.getNodeParameter(
+          Properties.OPTIONSET_ENTITYNAME,
+          itemIndex,
+          ""
+        ) as string;
+
+        const optionset_attributename = this.getNodeParameter(
+          Properties.OPTIONSET_ATTRIBUTENAME,
+          itemIndex,
+          ""
+        ) as string;
+
+        const global_attributeName = this.getNodeParameter(
+          Properties.GLOBAL_ATTRIBUTENAME,
+          itemIndex,
+          ""
+        ) as string;
+
+        const entityname = this.getNodeParameter(
+          Properties.ENTITYNAME,
+          itemIndex,
+          ""
+        ) as string;
+
+        const entity_id = this.getNodeParameter(
+          Properties.ENTITY_ID,
+          itemIndex,
+          ""
+        ) as string;
+
+        const entity_name = this.getNodeParameter(
+          Properties.ENTITY_NAME,
+          itemIndex,
+          ""
+        ) as string;
 
         if (operation === Operation.GET) {
           type = this.getNodeParameter("type", itemIndex) as string;
@@ -454,7 +533,6 @@ export class Dataverse implements INodeType {
 
             // Use the raw JSON data provided
           } else if (type === OperationType.COLUMN) {
-
             columnsData = this.getNodeParameter(
               "columnget",
               itemIndex
@@ -478,13 +556,9 @@ export class Dataverse implements INodeType {
             pairedItem: itemIndex,
           });
         } else if (operation === Operation.PATCH) {
-         
           type = this.getNodeParameter("type", itemIndex) as string;
 
-        
           if (type === OperationType.JSON) {
-  
-           
           } else if (type === OperationType.COLUMN) {
             // Use the fixed collection of columns
             columnsData = this.getNodeParameter(
@@ -505,8 +579,6 @@ export class Dataverse implements INodeType {
             pairedItem: itemIndex,
           });
         } else if (operation === Operation.OPTIONSET) {
-         
-         
           query = `EntityDefinitions(LogicalName='${optionset_entityname}')/Attributes(LogicalName='${optionset_attributename}')/Microsoft.Dynamics.CRM.PicklistAttributeMetadata?$select=LogicalName,DisplayName&$expand=OptionSet($select=Options)`;
 
           const data = await auth.GetData("ODATA", "", query);
@@ -540,7 +612,6 @@ export class Dataverse implements INodeType {
             pairedItem: itemIndex,
           });
         } else if (operation === Operation.GLOBALOPTIONSET) {
-         
           query = `GlobalOptionSetDefinitions(Name='${global_attributeName}')`;
 
           const data = await auth.GetData("ODATA", "", query);
@@ -583,6 +654,27 @@ export class Dataverse implements INodeType {
 
           returnData.push({
             json: output,
+            pairedItem: itemIndex,
+          });
+        } else if (operation === Operation.ENTITY) {
+          const modifiedEntityLogicalName =
+            auth.modifyEntityLogicalName(entityname);
+          const entityquery = `${modifiedEntityLogicalName}?$select=${entity_id},${entity_name}&$orderby=${entity_name} asc`;
+
+          const data = await auth.GetData(
+            OperationType.ODATA,
+            entityName,
+            entityquery || ""
+          );
+
+		  const mappedOptions  = data.value.map((entry: any) => ({			
+			  Id: entry.tct_titleid,
+			  Name: entry.tct_name,		
+		  }));
+		  const result = { options: mappedOptions };
+		  
+          returnData.push({
+            json: result as unknown as IDataObject,
             pairedItem: itemIndex,
           });
         }

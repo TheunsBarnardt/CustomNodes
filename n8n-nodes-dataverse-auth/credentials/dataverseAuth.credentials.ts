@@ -230,7 +230,7 @@ export class dataverseAuth implements ICredentialType {
         return match ? match[1] : null;
     }
 
-    private modifyEntityLogicalName(entityLogicalName: string): string {
+    public modifyEntityLogicalName(entityLogicalName: string): string {
         return entityLogicalName + (entityLogicalName.endsWith('s') ? 'es' : 's');
     }
 
@@ -259,8 +259,7 @@ export class dataverseAuth implements ICredentialType {
             return response.data;
         } catch (error: any) {
             throw new Error(`Dataverse API error: ${error.response?.status} - ${error.response?.statusText}. Details: ${JSON.stringify(error.response?.data)}`);
-        }
-        
+        }       
     }
 
     // ICredentialType Metadata
