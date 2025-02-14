@@ -239,21 +239,20 @@ export class dataverseAuth implements ICredentialType {
         if (!this.axiosInstance) throw new Error('Axios instance not available');
         let fullApiUrl = '';
 
-        if (type === "fetchxml") {
+        if (type === "FETCHXML") {
             const entityLogicalName = this.extractEntityNameFromFetchXml(query);
             if (!entityLogicalName) {
                 throw new Error("Failed to extract entity name from FetchXML.");
             }
             const modifiedEntityLogicalName = this.modifyEntityLogicalName(entityLogicalName);
             fullApiUrl = `/api/data/v9.2/${modifiedEntityLogicalName}?fetchXml=${encodeURIComponent(query)}`;           
-        } else  if (type === "odata") {
+        } else  if (type === "ODATA") {
              fullApiUrl = `/api/data/v9.2/${query}`;   
         } else if (type === "column") {
             const modifiedEntityLogicalName = this.modifyEntityLogicalName(entityName);
             fullApiUrl = `/api/data/v9.2/${modifiedEntityLogicalName}?$select=${query}`;
         } 
         try {
-            console.log(fullApiUrl);
             const response = await this.axiosInstance.get(fullApiUrl, {
                 headers: { Prefer: 'odata.include-annotations="*"' },
             });

@@ -11,6 +11,19 @@ import {
 } from 'n8n-workflow';
 import { dataverseAuth } from '../credentials/dataverseAuth.credentials';
 
+enum Operation {
+    GET = 'GET',
+    PATCH = 'PATCH',
+    OPTIONSET = 'OPTIONSET',
+	GLOBALOPTIONSET = 'GLOBALOPTIONSET'
+}
+
+enum OperationType {
+FETCHXML = 'FETCHXML',
+ODATA = 'ODATA',
+COLUMN = 'COLUMN',
+JSON = 'JSON'
+}
 
 export class Dataverse implements INodeType {
 	description: INodeTypeDescription = {
@@ -41,27 +54,27 @@ export class Dataverse implements INodeType {
 				noDataExpression: true,
 				options: [
 					{
-						name: 'Get Data',
-                        value: 'GET',
+						name: 'Get data',
+                        value: Operation.GET,
                         action: 'Retrieve data',
                     },                  
                     {
-                        name: 'Update Record',
-                        value: 'PATCH',
+                        name: 'Update record',
+                        value: Operation.PATCH,
                         action: 'Update record',
                     },
 					{
-						name: 'Get Lookup from OptionSet',
-                        value: 'optionset',
+						name: 'Get lookup from option set definitions',
+                        value: Operation.OPTIONSET,
                         action: 'Retrieve lookup data from OptionSet',
                     },
 					{
-						name: 'Get Lookup from Global Option Set Definitions',
-                        value: 'globaloptionset',
+						name: 'Get lookup from global option set definitions',
+                        value: Operation.GLOBALOPTIONSET,
                         action: 'Retrieve lookup data from GlobalOptionSetDefinitions',
                     },  
                 ],
-                default: 'GET',
+                default: Operation.GET,
 			},	
 			//Get
 			{
@@ -69,18 +82,18 @@ export class Dataverse implements INodeType {
 				name: 'type',
 				type: 'options',
 				options: [
-					{ name: 'FetchXML', value: 'fetchxml' },
-					{ name: 'OData', value: 'odata' },
+					{ name: 'FetchXML', value: OperationType.FETCHXML },
+					{ name: 'OData', value: OperationType.ODATA },
 					{
 						name: 'Column',
-						value: 'column',
+						value: OperationType.COLUMN,
 						description: 'Manually select and update specific columns',
 					},
 				],
-				default: 'fetchxml',
+				default: OperationType.FETCHXML,
 				displayOptions: {
 					show: {
-						operation: ['GET'],
+						operation: [Operation.GET],
 					},
 				},
 				required: true,
@@ -94,8 +107,8 @@ export class Dataverse implements INodeType {
 				default: '',
 				displayOptions: {
 					show: {
-						operation: ['GET'],
-						type: ['odata','fetchxml'],
+						operation: [Operation.GET],
+						type: [OperationType.ODATA,OperationType.FETCHXML],
 					},
 				},
 				description: 'Webapi Query',
@@ -109,7 +122,7 @@ export class Dataverse implements INodeType {
 				default: '',
 				displayOptions: {
 					show: {
-						operation: ['PATCH'],
+						operation: [Operation.PATCH],
 					},
 				},
 				required: true,
@@ -122,19 +135,19 @@ export class Dataverse implements INodeType {
 				options: [
 					{
 						name: 'JSON',
-						value: 'json',
+						value: OperationType.JSON,
 						description: 'Provide the update data as a JSON object',
 					},
 					{
 						name: 'Column',
-						value: 'column',
+						value: OperationType.COLUMN,
 						description: 'Manually select and update specific columns',
 					},
 				],
-				default: 'json',
+				default: OperationType.JSON,
 				displayOptions: {
 					show: {
-						operation: ['PATCH'],
+						operation: [Operation.PATCH],
 					},
 				},
 				description: 'Choose how to update the record',
@@ -149,8 +162,8 @@ export class Dataverse implements INodeType {
 				default: '{}',
 				displayOptions: {
 					show: {
-						operation: ['PATCH'],
-						type: ['json'],
+						operation: [Operation.PATCH],
+						type: [OperationType.JSON],
 					},
 				},
 				required: true,
@@ -166,8 +179,8 @@ export class Dataverse implements INodeType {
 				default: '',
 				displayOptions: {
 					show: {
-						operation: ['PATCH',"GET"],
-						type: ['column'],
+						operation: [Operation.PATCH,Operation.GET],
+						type: [OperationType.COLUMN],
 					},
 					
 				},
@@ -184,8 +197,8 @@ export class Dataverse implements INodeType {
 				default: {},
 				displayOptions: {
 					show: {
-						operation: ['PATCH'],
-						type: ['column'],
+						operation: [Operation.PATCH],
+						type: [OperationType.COLUMN],
 					},
 				},
 				options: [
@@ -224,8 +237,8 @@ export class Dataverse implements INodeType {
 				default: {},
 				displayOptions: {
 					show: {
-						operation: ["GET"],
-						type: ['column'],
+						operation: [Operation.GET],
+						type: [OperationType.COLUMN],
 					},
 				},
 				options: [
@@ -258,7 +271,7 @@ export class Dataverse implements INodeType {
 				default: '',
 				displayOptions: {
 					show: {
-						operation: ["optionset"]				
+						operation: [Operation.OPTIONSET]				
 					},
 				},
 				required: true,
@@ -271,7 +284,7 @@ export class Dataverse implements INodeType {
 				default: '',
 				displayOptions: {
 					show: {
-						operation: ['optionset'],
+						operation: [Operation.OPTIONSET],
 					},
 				},
 				description: 'Enter the attribute name for the OptionSet',
@@ -283,7 +296,7 @@ export class Dataverse implements INodeType {
 				default: '',
 				displayOptions: {
 					show: {
-						operation: ['globaloptionset'],
+						operation: [Operation.GLOBALOPTIONSET],
 					},
 				},
 				description: 'Enter the attribute name for the OptionSet',
@@ -335,12 +348,14 @@ export class Dataverse implements INodeType {
 
 	// The rest of your execute function remains as it is
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
-
+debugger;
 		const items = this.getInputData();
 		const returnData: INodeExecutionData[] = [];
-		const operation = this.getNodeParameter('operation', 0);
 		const credentials = await this.getCredentials('dataverseAuth');
 		const auth = new dataverseAuth();
+		const operation = this.getNodeParameter('operation', 0);
+
+		
 		await auth.authenticate(credentials, { url: '' });
 
 		for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
@@ -351,14 +366,14 @@ export class Dataverse implements INodeType {
 				let query: string | undefined;
 				let entityName: string = '';
 
-				if (operation === 'GET') {
+				if (operation === Operation.GET) {
 
 					type = this.getNodeParameter('type', itemIndex) as string;	
-					if (type === 'odata' || type === 'fetchxml') {
+					if (type === OperationType.ODATA || type === OperationType.FETCHXML) {
 						query = this.getNodeParameter('getQuery', itemIndex) as string;
 
 						// Use the raw JSON data provided
-					} else if (type === 'column') {	
+					} else if (type === OperationType.COLUMN) {	
 						entityName = this.getNodeParameter('entityName', itemIndex) as string;
 						columnsData = this.getNodeParameter('columnget', itemIndex) as IDataObject;
 						if (columnsData?.columnValues) {
@@ -380,7 +395,7 @@ export class Dataverse implements INodeType {
 					});
 					
 
-				} else if (operation === 'PATCH') {
+				} else if (operation === Operation.PATCH) {
 					const entityName = this.getNodeParameter('entityName', itemIndex) as string;
 					const recordId = this.getNodeParameter('recordId', itemIndex) as string;
 					type = this.getNodeParameter('type', itemIndex) as string;	
@@ -388,10 +403,10 @@ export class Dataverse implements INodeType {
 					// Initialize payload parts
 					let jsonData: IDataObject = {};
 				
-					if (type === 'json') {
+					if (type ===  OperationType.JSON) {
 						// Use the raw JSON data provided
 						jsonData = this.getNodeParameter('updateData', itemIndex) as IDataObject;
-					} else if (type === 'column') {
+					} else if (type === OperationType.COLUMN) {
 						// Use the fixed collection of columns
 						columnsData = this.getNodeParameter('columns', itemIndex) as IDataObject;
 					}
@@ -403,14 +418,14 @@ export class Dataverse implements INodeType {
 						pairedItem: itemIndex,
 					});
 				}
-				else if (operation === 'optionset') {
+				else if (operation === Operation.OPTIONSET) {
 
 					const entityNameoptionset = this.getNodeParameter('entityNameoptionset', itemIndex) as string;			
 					const attributeName = this.getNodeParameter('attributeName', itemIndex) as string;
 					
 					query = `EntityDefinitions(LogicalName='${entityNameoptionset}')/Attributes(LogicalName='${attributeName}')/Microsoft.Dynamics.CRM.PicklistAttributeMetadata?$select=LogicalName,DisplayName&$expand=OptionSet($select=Options)`;
 
-					const data = await auth.GetData('odata', '', query);
+					const data = await auth.GetData('ODATA', '', query);
 					
 					let output: IDataObject;
 					if (data.OptionSet && data.OptionSet.Options) {
@@ -434,13 +449,13 @@ export class Dataverse implements INodeType {
 						pairedItem: itemIndex,
 					});
 				}
-				else if (operation === 'globaloptionset') {
+				else if (operation === Operation.GLOBALOPTIONSET) {
 		
 					const attributeName = this.getNodeParameter('globalattributeName', itemIndex) as string;
 					
 					query = `GlobalOptionSetDefinitions(Name='${attributeName}')`;
 
-					const data = await auth.GetData('odata', '', query);
+					const data = await auth.GetData('ODATA', '', query);
 					
 					let output: IDataObject;
 	
