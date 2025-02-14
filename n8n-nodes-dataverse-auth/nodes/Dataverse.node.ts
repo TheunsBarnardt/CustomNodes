@@ -317,7 +317,7 @@ export class Dataverse implements INodeType {
       },
       {
         displayName: "Attribute Name",
-        name: "globalattributeName",
+        name: Properties.GLOBAL_ATTRIBUTENAME,
         type: "string",
         default: "",
         displayOptions: {
@@ -439,13 +439,13 @@ export class Dataverse implements INodeType {
 			itemIndex,
 			""
 		  ) as string;
-  /*
-		  const globalattributeName = this.getNodeParameter(
+
+		  const global_attributeName = this.getNodeParameter(
 			Properties.GLOBAL_ATTRIBUTENAME,
 			itemIndex,
 			""
 		  ) as string;
-  	 */
+  
 
         if (operation === Operation.GET) {
           type = this.getNodeParameter("type", itemIndex) as string;
@@ -545,12 +545,8 @@ export class Dataverse implements INodeType {
             pairedItem: itemIndex,
           });
         } else if (operation === Operation.GLOBALOPTIONSET) {
-          const attributeName = this.getNodeParameter(
-            "globalattributeName",
-            itemIndex
-          ) as string;
-
-          query = `GlobalOptionSetDefinitions(Name='${attributeName}')`;
+         
+          query = `GlobalOptionSetDefinitions(Name='${global_attributeName}')`;
 
           const data = await auth.GetData("ODATA", "", query);
 
