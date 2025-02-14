@@ -181,7 +181,7 @@ export class Dataverse implements INodeType {
       },
       {
         displayName: "Json Data",
-        name: "updateData",
+        name: Properties.PATCH_DATA,
         type: "json",
         typeOptions: {
           alwaysOpenEditWindow: true,
@@ -421,13 +421,13 @@ export class Dataverse implements INodeType {
 			Properties.PATCH_COLUMNS,
 			itemIndex,
 			null
-		  ) as IDataObject;
+		  ) as IDataObject;*/
 		  const patch_data = this.getNodeParameter(
 			Properties.PATCH_DATA,
 			itemIndex,
 			null
 		  ) as IDataObject;
-  */
+  
 		  const optionset_entityname = this.getNodeParameter(
 			Properties.OPTIONSET_ENTITYNAME,
 			itemIndex,
@@ -481,15 +481,10 @@ export class Dataverse implements INodeType {
          
           type = this.getNodeParameter("type", itemIndex) as string;
 
-          // Initialize payload parts
-          let jsonData: IDataObject = {};
-
+        
           if (type === OperationType.JSON) {
-            // Use the raw JSON data provided
-            jsonData = this.getNodeParameter(
-              "updateData",
-              itemIndex
-            ) as IDataObject;
+  
+           
           } else if (type === OperationType.COLUMN) {
             // Use the fixed collection of columns
             columnsData = this.getNodeParameter(
@@ -502,7 +497,7 @@ export class Dataverse implements INodeType {
           const updateResponse = await auth.UpdateData(
             entityName,
             patch_recordid,
-            jsonData,
+            patch_data,
             columnsData
           );
           returnData.push({
