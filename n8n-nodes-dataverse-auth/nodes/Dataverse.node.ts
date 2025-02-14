@@ -106,7 +106,7 @@ export class Dataverse implements INodeType {
       //Get
       {
         displayName: "Type",
-        name: "type",
+		name: "type",
         type: "options",
         options: [
           { name: "FetchXML", value: OperationType.FETCHXML },
@@ -402,7 +402,7 @@ export class Dataverse implements INodeType {
 			itemIndex,
 			""
 		  ) as string;
-  
+
 		  /* 
 		  const get_column = this.getNodeParameter(
 			Properties.GET_COLUMN,
