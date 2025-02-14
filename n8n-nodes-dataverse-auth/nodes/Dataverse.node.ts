@@ -14,6 +14,7 @@ import { dataverseAuth } from "../credentials/dataverseAuth.credentials";
 export enum Operation {
   GET = "GET",
   PATCH = "PATCH",
+  POST = "POST",
   OPTIONSET = "OPTIONSET",
   GLOBALOPTIONSET = "GLOBALOPTIONSET",
   ENTITY = "ENTITY",
@@ -93,6 +94,11 @@ export class Dataverse implements INodeType {
             name: "Update record",
             value: Operation.PATCH,
             action: "Update record",
+          },
+		  {
+            name: "Create record",
+            value: Operation.POST,
+            action: "Create record",
           },
           {
             name: "Get lookup from option set definitions",
@@ -183,7 +189,7 @@ export class Dataverse implements INodeType {
         default: OperationType.JSON,
         displayOptions: {
           show: {
-            operation: [Operation.PATCH],
+            operation: [Operation.PATCH,Operation.POST],
           },
         },
         description: "Choose how to update the record",
@@ -198,7 +204,7 @@ export class Dataverse implements INodeType {
         default: "{}",
         displayOptions: {
           show: {
-            operation: [Operation.PATCH],
+            operation: [Operation.PATCH,,Operation.POST],
             type: [OperationType.JSON],
           },
         },
@@ -215,7 +221,7 @@ export class Dataverse implements INodeType {
         default: "",
         displayOptions: {
           show: {
-            operation: [Operation.PATCH, Operation.GET],
+            operation: [Operation.PATCH, Operation.GET,,Operation.POST],
             type: [OperationType.COLUMN],
           },
         },
@@ -232,7 +238,7 @@ export class Dataverse implements INodeType {
         default: {},
         displayOptions: {
           show: {
-            operation: [Operation.PATCH],
+            operation: [Operation.PATCH,,Operation.POST],
             type: [OperationType.COLUMN],
           },
         },
@@ -295,6 +301,7 @@ export class Dataverse implements INodeType {
           },
         ],
       },
+	  
       //optionset
       {
         displayName: "Entity Name",
@@ -417,7 +424,7 @@ export class Dataverse implements INodeType {
       async getEntityColumns(
         this: ILoadOptionsFunctions
       ): Promise<INodePropertyOptions[]> {
-        debugger;
+
         const entityName = this.getCurrentNodeParameter(
           Properties.ENTITYNAME
         ) as string;
@@ -668,8 +675,8 @@ export class Dataverse implements INodeType {
           );
 
 		  const mappedOptions  = data.value.map((entry: any) => ({			
-			  Id: entry.tct_titleid,
-			  Name: entry.tct_name,		
+			  Id: entry[entity_id],
+			  Name: entry[entity_name],		
 		  }));
 		  const result = { options: mappedOptions };
 		  

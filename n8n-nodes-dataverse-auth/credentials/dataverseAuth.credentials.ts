@@ -231,7 +231,14 @@ export class dataverseAuth implements ICredentialType {
     }
 
     public modifyEntityLogicalName(entityLogicalName: string): string {
-        return entityLogicalName + (entityLogicalName.endsWith('s') ? 'es' : 's');
+        if (entityLogicalName.endsWith('y')) {
+            // Remove the trailing "y" and add "ies"
+            return entityLogicalName.slice(0, -1) + 'ies';
+        } else if (entityLogicalName.endsWith('s')) {
+            return entityLogicalName + 'es';
+        } else {
+            return entityLogicalName + 's';
+        }
     }
 
     async GetData(type: string,entityName: string, query: string): Promise<any> {
