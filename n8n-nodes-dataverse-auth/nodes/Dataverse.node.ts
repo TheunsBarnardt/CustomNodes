@@ -497,6 +497,8 @@ export class Dataverse implements INodeType {
           null
         ) as IDataObject;
 
+
+
         const optionset_entityname = this.getNodeParameter(
           Properties.OPTIONSET_ENTITYNAME,
           itemIndex,
@@ -585,7 +587,31 @@ export class Dataverse implements INodeType {
             json: updateResponse as IDataObject,
             pairedItem: itemIndex,
           });
-        } else if (operation === Operation.OPTIONSET) {
+        }
+		else if (operation === Operation.POST) {
+			type = this.getNodeParameter("type", itemIndex) as string;
+  
+			if (type === OperationType.JSON) {
+			} else if (type === OperationType.COLUMN) {
+			  // Use the fixed collection of columns
+			  columnsData = this.getNodeParameter(
+				"columns",
+				itemIndex
+			  ) as IDataObject;
+			}
+  
+			// Pass both payloads to the UpdateData function; the function will merge them
+			const updateResponse = await auth.CreateData(
+			  entityName,
+			  patch_data,
+			  columnsData
+			);
+			returnData.push({
+			  json: updateResponse as IDataObject,
+			  pairedItem: itemIndex,
+			});
+		  }  
+		else if (operation === Operation.OPTIONSET) {
           query = `EntityDefinitions(LogicalName='${optionset_entityname}')/Attributes(LogicalName='${optionset_attributename}')/Microsoft.Dynamics.CRM.PicklistAttributeMetadata?$select=LogicalName,DisplayName&$expand=OptionSet($select=Options)`;
 
           const data = await auth.GetData("ODATA", "", query);

@@ -137,6 +137,50 @@ export class dataverseAuth implements ICredentialType {
         }
     }
 
+    async CreateData(entityName: string, payload: IDataObject,columnsToUpdate?: IDataObject): Promise<any> {
+
+        await this.ensureAuthenticated();
+        if (!this.axiosInstance) throw new Error('Axios instance not available');
+    
+        // Start with the updateData payload (if provided)
+        let body: IDataObject = {};
+        if (payload && Object.keys(payload).length > 0) {
+            body = { ...payload };
+        }    
+        
+        if (
+            columnsToUpdate &&
+            columnsToUpdate.columnValues &&
+            Array.isArray(columnsToUpdate.columnValues)
+        ) {
+            for (const columnUpdate of columnsToUpdate.columnValues) {
+                if (columnUpdate.columnName) {
+                    body[columnUpdate.columnName] = columnUpdate.columnValue;
+                }
+            }
+        }
+        const databody = JSON.stringify(body);   
+        const modifiedEntityLogicalName = this.modifyEntityLogicalName(entityName);     
+        const fullApiUrl = `/api/data/v9.2/${modifiedEntityLogicalName}`;
+        const headers = {
+            "OData-MaxVersion": "4.0",
+            "Content-Type": "application/json; charset=utf-8",
+            "Accept": "application/json",
+            "Prefer": "odata.include-annotations=*",
+        };
+
+        try {
+            const response = await this.axiosInstance.post(fullApiUrl, databody, { headers });
+            return response.data;
+        } catch (error: any) {
+            throw new Error(
+                `Dataverse API error: ${error.response?.status} - ${error.response?.statusText}. Details: ${JSON.stringify(
+                    error.response?.data
+                )}`
+            );
+        }       
+    }
+    
     // API calls using the shared axios instance
     async UpdateData(
         entityName: string,
