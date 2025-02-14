@@ -141,7 +141,8 @@ export class dataverseAuth implements ICredentialType {
 
         await this.ensureAuthenticated();
         if (!this.axiosInstance) throw new Error('Axios instance not available');
-    
+        debugger;
+        
         // Start with the updateData payload (if provided)
         let body: IDataObject = {};
         if (payload && Object.keys(payload).length > 0) {
@@ -168,7 +169,7 @@ export class dataverseAuth implements ICredentialType {
             "Accept": "application/json",
             "Prefer": "odata.include-annotations=*",
         };
-
+        console.log(`Url : ${fullApiUrl} , Body : ${databody}`)
         try {
             const response = await this.axiosInstance.post(fullApiUrl, databody, { headers });
             return response.data;

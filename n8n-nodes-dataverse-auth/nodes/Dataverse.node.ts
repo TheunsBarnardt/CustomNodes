@@ -126,11 +126,11 @@ export class Dataverse implements INodeType {
         options: [
           { name: "FetchXML", value: OperationType.FETCHXML },
           { name: "OData", value: OperationType.ODATA },
-          {
+          /*{
             name: "Column",
             value: OperationType.COLUMN,
             description: "Manually select and update specific columns",
-          },
+          },*/
         ],
         default: OperationType.FETCHXML,
         displayOptions: {
@@ -238,7 +238,47 @@ export class Dataverse implements INodeType {
         default: {},
         displayOptions: {
           show: {
-            operation: [Operation.PATCH,,Operation.POST],
+            operation: [Operation.PATCH],
+            type: [OperationType.COLUMN],
+          },
+        },
+        options: [
+          {
+            displayName: "Column",
+            name: "columnValues",
+            values: [
+              {
+                displayName: "Column Name",
+                name: "columnName",
+                type: "options",
+                typeOptions: {
+                  loadOptionsMethod: "getEntityColumns",
+                },
+                default: "",
+                description: "Select the column to update",
+              },
+              {
+                displayName: "Column Value",
+                name: "columnValue",
+                type: "string",
+                default: "",
+                description: "Enter the value for the selected column",
+              },
+            ],
+          },
+        ],
+      },
+	  {
+        displayName: "Columns",
+        name: "postcolumn",
+        type: "fixedCollection",
+        typeOptions: {
+          multipleValues: true,
+        },
+        default: {},
+        displayOptions: {
+          show: {
+            operation: [Operation.POST],
             type: [OperationType.COLUMN],
           },
         },
@@ -589,13 +629,14 @@ export class Dataverse implements INodeType {
           });
         }
 		else if (operation === Operation.POST) {
+			debugger;
 			type = this.getNodeParameter("type", itemIndex) as string;
   
 			if (type === OperationType.JSON) {
 			} else if (type === OperationType.COLUMN) {
 			  // Use the fixed collection of columns
 			  columnsData = this.getNodeParameter(
-				"columns",
+				"postcolumn",
 				itemIndex
 			  ) as IDataObject;
 			}
