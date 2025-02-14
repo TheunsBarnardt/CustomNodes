@@ -305,7 +305,7 @@ export class Dataverse implements INodeType {
       },
       {
         displayName: "Attribute Name",
-        name: "attributeName",
+        name: Properties.OPTIONSET_ATTRIBUTENAME,
         type: "string",
         default: "",
         displayOptions: {
@@ -433,13 +433,13 @@ export class Dataverse implements INodeType {
 			itemIndex,
 			""
 		  ) as string;
-		  /*
+		  
 		  const optionset_attributename = this.getNodeParameter(
 			Properties.OPTIONSET_ATTRIBUTENAME,
 			itemIndex,
 			""
 		  ) as string;
-  
+  /*
 		  const globalattributeName = this.getNodeParameter(
 			Properties.GLOBAL_ATTRIBUTENAME,
 			itemIndex,
@@ -511,12 +511,8 @@ export class Dataverse implements INodeType {
           });
         } else if (operation === Operation.OPTIONSET) {
          
-          const attributeName = this.getNodeParameter(
-            "attributeName",
-            itemIndex
-          ) as string;
-
-          query = `EntityDefinitions(LogicalName='${optionset_entityname}')/Attributes(LogicalName='${attributeName}')/Microsoft.Dynamics.CRM.PicklistAttributeMetadata?$select=LogicalName,DisplayName&$expand=OptionSet($select=Options)`;
+         
+          query = `EntityDefinitions(LogicalName='${optionset_entityname}')/Attributes(LogicalName='${optionset_attributename}')/Microsoft.Dynamics.CRM.PicklistAttributeMetadata?$select=LogicalName,DisplayName&$expand=OptionSet($select=Options)`;
 
           const data = await auth.GetData("ODATA", "", query);
 
