@@ -51,8 +51,9 @@ This Dataverse n8n node is a community node and can be installed in a few ways, 
 
 *   **Using the n8n UI (Recommended):** If the node is available in the community repository, simply click the "Install" button.  n8n will handle the installation and dependencies. This is the simplest method.
 *   **Manual Installation (for development or unpublished nodes):** If you're working with a development version of the node or if it's not yet published, you'll likely need to install it manually.  This usually involves:
-    *   Cloning the repository (if you have the source code): `git clone https://github.com/TheunsBarnardt/n8n-nodes-dataverse.git`
-    *   Navigating to the node's directory: `cd n8n-nodes-dataverse`
+    *   Cloning the repository (if you have the source code): `git clone https://github.com/TheunsBarnardt/CustomNodes.git`
+    *   The Folder **n8n-nodes-custom-forms** is still in progress **don't try and install** 
+    *   Navigating to the node's directory: `cd n8n-nodes-dataverse-auth`
     *   Installing dependencies: `npm install` or `yarn install`
     *   Building the node: `npm run build`
     *   Linking the node (if necessary): `npm link`
@@ -95,6 +96,7 @@ The Dataverse node offers several operations, each with specific parameters:
 
 ![alt text](documentation/image-11.png)
 
+
 *   **Entity Name:** The logical name of the entity.
 *   **Record ID:** The GUID of the record to update.
 *   **Type:** Column.
@@ -103,6 +105,7 @@ The Dataverse node offers several operations, each with specific parameters:
 ### Create Record (POST)
 
 ![alt text](documentation/image-12.png)
+
 
 *   **Entity Name:** The logical name of the entity.
 *   **Type:** Column.
