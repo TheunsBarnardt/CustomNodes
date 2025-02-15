@@ -64,7 +64,7 @@ export class Dataverse implements INodeType {
     icon: "file:./resources/Dataverse_scalable.svg",
     group: ["transform"],
     version: 1,
-    description: "Dataverse",
+    description: "Seamless integration with the Dynamics 365 Dataverse API",
     subtitle: '={{ $parameter["operation"] }}',
     defaults: {
       name: "Dataverse",
@@ -125,12 +125,7 @@ export class Dataverse implements INodeType {
         type: "options",
         options: [
           { name: "FetchXML", value: OperationType.FETCHXML },
-          { name: "OData", value: OperationType.ODATA },
-          /*{
-            name: "Column",
-            value: OperationType.COLUMN,
-            description: "Manually select and update specific columns",
-          },*/
+          { name: "OData", value: OperationType.ODATA },        
         ],
         default: OperationType.FETCHXML,
         displayOptions: {
@@ -169,48 +164,7 @@ export class Dataverse implements INodeType {
         },
         required: true,
         description: "Record Id of the record to update",
-      },
-      {
-        displayName: "Type",
-        name: "type",
-        type: "options",
-        options: [
-          {
-            name: "JSON",
-            value: OperationType.JSON,
-            description: "Provide the update data as a JSON object",
-          },
-          {
-            name: "Column",
-            value: OperationType.COLUMN,
-            description: "Manually select and update specific columns",
-          },
-        ],
-        default: OperationType.JSON,
-        displayOptions: {
-          show: {
-            operation: [Operation.PATCH,Operation.POST],
-          },
-        },
-        description: "Choose how to update the record",
-      },
-      {
-        displayName: "Json Data",
-        name: Properties.PATCH_DATA,
-        type: "json",
-        typeOptions: {
-          alwaysOpenEditWindow: true,
-        },
-        default: "{}",
-        displayOptions: {
-          show: {
-            operation: [Operation.PATCH,,Operation.POST],
-            type: [OperationType.JSON],
-          },
-        },
-        required: true,
-        description: "The JSON object containing fields and values to update",
-      },
+      },      
       {
         displayName: "Entity Name",
         name: Properties.ENTITYNAME,
@@ -222,7 +176,6 @@ export class Dataverse implements INodeType {
         displayOptions: {
           show: {
             operation: [Operation.PATCH, Operation.GET,,Operation.POST],
-            type: [OperationType.COLUMN],
           },
         },
         required: true,
@@ -239,7 +192,6 @@ export class Dataverse implements INodeType {
         displayOptions: {
           show: {
             operation: [Operation.PATCH],
-            type: [OperationType.COLUMN],
           },
         },
         options: [
@@ -278,8 +230,7 @@ export class Dataverse implements INodeType {
         default: {},
         displayOptions: {
           show: {
-            operation: [Operation.POST],
-            type: [OperationType.COLUMN],
+            operation: [Operation.POST]
           },
         },
         options: [
@@ -605,16 +556,13 @@ export class Dataverse implements INodeType {
             pairedItem: itemIndex,
           });
         } else if (operation === Operation.PATCH) {
-          type = this.getNodeParameter("type", itemIndex) as string;
-
-          if (type === OperationType.JSON) {
-          } else if (type === OperationType.COLUMN) {
+          
             // Use the fixed collection of columns
             columnsData = this.getNodeParameter(
               "columns",
               itemIndex
             ) as IDataObject;
-          }
+         
 
           // Pass both payloads to the UpdateData function; the function will merge them
           const updateResponse = await auth.UpdateData(
@@ -629,17 +577,13 @@ export class Dataverse implements INodeType {
           });
         }
 		else if (operation === Operation.POST) {
-			debugger;
-			type = this.getNodeParameter("type", itemIndex) as string;
-  
-			if (type === OperationType.JSON) {
-			} else if (type === OperationType.COLUMN) {
+		
 			  // Use the fixed collection of columns
 			  columnsData = this.getNodeParameter(
 				"postcolumn",
 				itemIndex
 			  ) as IDataObject;
-			}
+			
   
 			// Pass both payloads to the UpdateData function; the function will merge them
 			const updateResponse = await auth.CreateData(
