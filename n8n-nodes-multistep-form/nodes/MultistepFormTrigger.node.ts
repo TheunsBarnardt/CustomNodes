@@ -16,28 +16,29 @@ export class MultistepFormTrigger {
       const formTitle = this.getNodeParameter('formTitle', '') as string;
       const steps = this.getNodeParameter('steps', {}) as any;
       const webhookUrl = this.getNodeWebhookUrl('default') || '';
-  
+
       if (req.method === 'GET') {
         const formHtml = MultistepFormTrigger.generateFormHtml(formTitle, steps, webhookUrl);
         res.setHeader('Content-Type', 'text/html');
         res.send(formHtml);
         return { noWebhookResponse: true };
       }
-  
+
       if (req.method === 'POST') {
-        const formData = req.body;
-        
-        // Validate data using Zod
-        const FormSchema = z.object({
-          formData: z.record(z.string()).optional(),
-        });
-        
-        const validation = FormSchema.safeParse({ formData });
+        console.log("Received request body:", req.body); // Debugging log
+      
+        const formData = req.body.formData; // Extract the actual form data
+      
+        // Updated schema to match the received structure
+        const FormSchema = z.record(z.union([z.string(), z.array(z.string()), z.number()]));
+      
+        const validation = FormSchema.safeParse(formData);
         if (!validation.success) {
-          res.status(400).send('Invalid form data!');
+          console.error("Validation error:", validation.error.errors);
+          res.status(400).json({ error: 'Invalid form data!', details: validation.error.errors });
           return { noWebhookResponse: true };
         }
-        
+      
         const workflowData = [{
           json: {
             formData,
@@ -45,22 +46,23 @@ export class MultistepFormTrigger {
             webhookUrl,
           },
         }];
-        
-        res.status(200).send('Form submitted successfully!');
-  
+      
+        res.status(200).json({ message: 'Form submitted successfully!', data: formData });
+      
         return {
           workflowData: [workflowData],
           noWebhookResponse: true,
         };
       }
-  
+      
+
       res.status(405).send('Method Not Allowed');
       return { noWebhookResponse: true };
     } catch (error) {
       throw new NodeApiError(this.getNode(), error);
     }
   }
-  
+
   private static generateFormHtml(formTitle: string, steps: any, webhookUrl: string): string {
     let html = `
       <!DOCTYPE html>
@@ -74,18 +76,18 @@ export class MultistepFormTrigger {
       <body class="bg-gray-100 flex items-center justify-center min-h-screen">
         <div class="w-full max-w-lg bg-white shadow-lg rounded-lg p-6">
           <h1 class="text-2xl font-semibold text-center mb-4">${formTitle}</h1>
-          <form id="multistepForm" method="POST" action="${webhookUrl}">
+          <form id="multistepForm">
     `;
-  
+
     const stepsArray = steps.step;
-    
-    stepsArray.forEach((step: { fields: { field: any[]; }; stepName: any; }, index: number) => {
+
+    stepsArray.forEach((step: { fields: { field: any[] }; stepName: any }, index: number) => {
       const isActive = index === 0 ? 'block' : 'hidden';
       const stepName = step.stepName || `Step ${index + 1}`;
       html += `<div class="step ${isActive}" data-step="${step.stepName}">
                 <h2 class="text-lg font-bold mb-2">${stepName}</h2>`;
-  
-      step.fields.field.forEach((field: { fieldLabel: any; fieldType: any; }) => {
+
+      step.fields.field.forEach((field: { fieldLabel: any; fieldType: any }) => {
         html += `
           <label class="block text-sm font-medium text-gray-700">${field.fieldLabel}</label>
           <input type="${field.fieldType}" name="${field.fieldLabel}" required
@@ -95,7 +97,7 @@ export class MultistepFormTrigger {
       });
       html += `</div>`;
     });
-  
+
     html += `
       <div class="flex justify-between mt-4">
         <button type="button" id="prevBtn" class="bg-gray-400 text-white px-4 py-2 rounded" disabled>Previous</button>
@@ -106,48 +108,55 @@ export class MultistepFormTrigger {
       <script>
         const steps = document.querySelectorAll('.step');
         let currentStep = 0;
-  
+
         function updateButtons() {
           document.getElementById('prevBtn').disabled = currentStep === 0;
           document.getElementById('nextBtn').classList.toggle('hidden', currentStep === steps.length - 1);
           document.getElementById('submitBtn').classList.toggle('hidden', currentStep !== steps.length - 1);
         }
-  
+
         document.getElementById('nextBtn').addEventListener('click', () => {
           steps[currentStep].classList.add('hidden');
           currentStep++;
           steps[currentStep].classList.remove('hidden');
           updateButtons();
         });
-  
+
         document.getElementById('prevBtn').addEventListener('click', () => {
           steps[currentStep].classList.add('hidden');
           currentStep--;
           steps[currentStep].classList.remove('hidden');
           updateButtons();
         });
-  
+
         document.getElementById('multistepForm').addEventListener('submit', (e) => {
           e.preventDefault();
-          const formData = new FormData(e.target);
+          const formData = Object.fromEntries(new FormData(e.target).entries());
+
           fetch('${webhookUrl}', {
             method: 'POST',
-            body: formData,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ formData }),
           })
-          .then(() => {
-            alert('Form submitted successfully!');
+          .then(response => response.json())
+          .then(data => {
+            if (data.error) {
+              alert('Error: ' + data.error);
+            } else {
+              alert('Form submitted successfully!');
+            }
           })
           .catch(error => {
             alert('Error submitting form: ' + error.message);
           });
         });
-  
+
         updateButtons();
       </script>
     </div>
     </body>
     </html>`;
-  
+
     return html;
   }
 }
