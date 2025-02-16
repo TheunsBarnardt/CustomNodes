@@ -1,6 +1,6 @@
 # Dataverse n8n Custom Node
 
-![Dataverse](n8n-nodes-dataverse-auth/nodes/resources/Dataverse_scalable.svg)
+![Dataverse](./resources/Dataverse_scalable.svg)
 
 This n8n custom node enables seamless integration with the Dynamics 365 Dataverse API, empowering you to automate Dataverse interactions within your n8n workflows.
 
@@ -42,9 +42,9 @@ This Dataverse n8n node is a community node and can be installed in a few ways, 
 
 **2. Locate the Node:**
 
-![alt text](n8n-nodes-dataverse-auth/nodes/resources/image.png)
+![alt text](./resources/image.png)
 
-![alt text](n8n-nodes-dataverse-auth/nodes/resources/image-1.png)
+![alt text](./resources/image-1.png)
 *   **n8n Community Nodes Repository:**  The most common way to install community nodes is through the n8n UI itself.  In your n8n instance, go to the "Nodes" section and search for "Dataverse".  If it's published in the community repository, you should find it there.
 
 **3. Install the Node:**
@@ -75,7 +75,7 @@ This Dataverse n8n node is a community node and can be installed in a few ways, 
 
 ## Authentication
 
-![alt text](./n8n-nodes-dataverse-auth/nodes/resources/image-13.png)
+![alt text](./resources/image-13.png)
 
 1.  In n8n, navigate to **Credentials** and add a new "Dataverse Auth" credential.
 2.  Fill in the following fields:
@@ -92,17 +92,17 @@ The Dataverse node offers several operations, each with specific parameters:
 
 ### Get Data (GET)
 
-![alt text](./n8n-nodes-dataverse-auth/nodes/resources/image-2.png)
-![alt text](./n8n-nodes-dataverse-auth/nodes/resources/image-3.png)
-![alt text](./n8n-nodes-dataverse-auth/nodes/resources/image-4.png)
-![alt text](./n8n-nodes-dataverse-auth/nodes/resources/image-5.png)
+![alt text](./resources/image-2.png)
+![alt text](./resources/image-3.png)
+![alt text](./resources/image-4.png)
+![alt text](./resources/image-5.png)
 
 *   **Type:** FetchXML or OData.
 *   **Query:** The FetchXML or OData query string.
 
 ### Update Record (PATCH)
 
-![alt text](./n8n-nodes-dataverse-auth/nodes/resources/image-11.png)
+![alt text](./resources/image-11.png)
 
 
 *   **Entity Name:** The logical name of the entity.
@@ -112,7 +112,7 @@ The Dataverse node offers several operations, each with specific parameters:
 
 ### Create Record (POST)
 
-![alt text](./n8n-nodes-dataverse-auth/nodes/resources/image-12.png)
+![alt text](./resources/image-12.png)
 
 
 *   **Entity Name:** The logical name of the entity.
@@ -122,22 +122,22 @@ The Dataverse node offers several operations, each with specific parameters:
 ### Get Lookup from Option Set Definitions (OPTIONSET)
 
 
-![alt text](./n8n-nodes-dataverse-auth/nodes/resources/image-6.png)
-![alt text](./n8n-nodes-dataverse-auth/nodes/resources/image-7.png)
+![alt text](./resources/image-6.png)
+![alt text](./resources/image-7.png)
 
 *   **Entity Name:** The logical name of the entity the option set belongs to.
 *   **Attribute Name:** The logical name of the attribute (field) using the option set.
 
 ### Get Lookup from Global Option Set Definitions (GLOBALOPTIONSET)
 
-![alt text](./n8n-nodes-dataverse-auth/nodes/resources/image-8.png)
+![alt text](./resources/image-8.png)
 
 *   **Attribute Name:** The name of the global option set.
 
 ### Get Lookup from Entity (ENTITY)
 
-![alt text](./n8n-nodes-dataverse-auth/nodes/resources/image-9.png)
-![alt text](./n8n-nodes-dataverse-auth/nodes/resources/image-10.png)
+![alt text](./resources/image-9.png)
+![alt text](./resources/image-10.png)
 
 *   **Entity Name:** The logical name of the entity.
 *   **ID Column:** The logical name of the ID column.
