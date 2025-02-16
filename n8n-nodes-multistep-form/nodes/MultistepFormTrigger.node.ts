@@ -20,21 +20,28 @@ export class MultistepFormTrigger {
         const formHtml = MultistepFormTrigger.generateFormHtml(formTitle, steps, webhookUrl);
         res.setHeader('Content-Type', 'text/html');
         res.send(formHtml);
-  
-        // Prevent further execution
         return { noWebhookResponse: true };
       }
   
       if (req.method === 'POST') {
         const formData = req.body;
+  
+        // Prepare the workflow data
+        const workflowData = [{
+          json: {
+            formData,
+            timestamp: new Date().toISOString(),
+            webhookUrl,
+          },
+        }];
+        
+        // Send a success response back to the client
+        res.status(200).send('Form submitted successfully!');
+  
+        // Explicitly mark the workflow as completed
         return {
-          workflowData: [[{
-            json: {
-              formData,
-              timestamp: new Date().toISOString(),
-              webhookUrl,
-            },
-          }]],
+          workflowData: [workflowData],  // Return the form data
+          noWebhookResponse: true, // Stop further processing in n8n
         };
       }
   
@@ -45,6 +52,8 @@ export class MultistepFormTrigger {
       throw new NodeApiError(this.getNode(), error);
     }
   }
+  
+  
   
   private static generateFormHtml(formTitle: string, steps: any, webhookUrl: string): string {
     let html = `
@@ -62,14 +71,10 @@ export class MultistepFormTrigger {
       <body>
         <h1>${formTitle}</h1>
         <div class="webhook-url">
-          Form URL: <a href="${webhookUrl}" target="_blank">${webhookUrl}</a>
         </div>
         <form id="multistepForm" method="POST" action="${webhookUrl}">
     `;
   
-    const stepsJson = JSON.stringify(steps);
-    console.log(stepsJson);
-
     const stepsArray = steps.step;
 
     stepsArray.forEach((step: { fields: { field: any[]; }; stepName: any; }) => {
