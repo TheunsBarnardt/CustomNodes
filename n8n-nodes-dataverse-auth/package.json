@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-dataverse",
-  "version": "0.1.21",
+  "version": "0.1.22",
   "description": "n8n community node for communicating to dataverse",
   "keywords": [
     "n8n-community-node-package",
