@@ -94,6 +94,13 @@ export const MultistepFormTriggerDescription: INodeTypeDescription = {
                       default: 'text',
                       description: 'Type of the field',
                     },
+                    {
+                      displayName: 'Required',
+                      name: 'fieldRequired',
+                      type: 'boolean',
+                      default: false,
+                      description: 'Is the field required',
+                    },
                   ],
                 },
               ],

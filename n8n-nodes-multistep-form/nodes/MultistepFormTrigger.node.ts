@@ -4,6 +4,7 @@ import {
   NodeApiError,
 } from 'n8n-workflow';
 import { MultistepFormTriggerDescription } from './MultistepFormTrigger.description';
+import { z } from 'zod';
 
 export class MultistepFormTrigger {
   description = MultistepFormTriggerDescription;
@@ -25,8 +26,18 @@ export class MultistepFormTrigger {
   
       if (req.method === 'POST') {
         const formData = req.body;
-  
-        // Prepare the workflow data
+        
+        // Validate data using Zod
+        const FormSchema = z.object({
+          formData: z.record(z.string()).optional(),
+        });
+        
+        const validation = FormSchema.safeParse({ formData });
+        if (!validation.success) {
+          res.status(400).send('Invalid form data!');
+          return { noWebhookResponse: true };
+        }
+        
         const workflowData = [{
           json: {
             formData,
@@ -35,17 +46,14 @@ export class MultistepFormTrigger {
           },
         }];
         
-        // Send a success response back to the client
         res.status(200).send('Form submitted successfully!');
   
-        // Explicitly mark the workflow as completed
         return {
-          workflowData: [workflowData],  // Return the form data
-          noWebhookResponse: true, // Stop further processing in n8n
+          workflowData: [workflowData],
+          noWebhookResponse: true,
         };
       }
   
-      // Handle unsupported methods (405)
       res.status(405).send('Method Not Allowed');
       return { noWebhookResponse: true };
     } catch (error) {
@@ -53,52 +61,47 @@ export class MultistepFormTrigger {
     }
   }
   
-  
-  
   private static generateFormHtml(formTitle: string, steps: any, webhookUrl: string): string {
     let html = `
       <!DOCTYPE html>
-      <html>
+      <html lang="en">
       <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>${formTitle}</title>
-        <style>
-          .step { display: none; }
-          .step.active { display: block; }
-          button { margin: 10px; }
-          .webhook-url { margin: 20px 0; }
-        </style>
+        <script src="https://cdn.tailwindcss.com"></script>
       </head>
-      <body>
-        <h1>${formTitle}</h1>
-        <div class="webhook-url">
-        </div>
-        <form id="multistepForm" method="POST" action="${webhookUrl}">
+      <body class="bg-gray-100 flex items-center justify-center min-h-screen">
+        <div class="w-full max-w-lg bg-white shadow-lg rounded-lg p-6">
+          <h1 class="text-2xl font-semibold text-center mb-4">${formTitle}</h1>
+          <form id="multistepForm" method="POST" action="${webhookUrl}">
     `;
   
     const stepsArray = steps.step;
-
-    stepsArray.forEach((step: { fields: { field: any[]; }; stepName: any; }) => {
-      const index = stepsArray.indexOf(step);
-
-      const isActive = index === 0 ? 'active' : '';
-      const stepName = step.stepName || `Step ${index + 1}`; // Ensure stepName is defined
-      html += `<div class="step ${isActive}" data-step="${step.stepName}">`;
-      html += `<h2>${stepName}</h2>`;
-
+    
+    stepsArray.forEach((step: { fields: { field: any[]; }; stepName: any; }, index: number) => {
+      const isActive = index === 0 ? 'block' : 'hidden';
+      const stepName = step.stepName || `Step ${index + 1}`;
+      html += `<div class="step ${isActive}" data-step="${step.stepName}">
+                <h2 class="text-lg font-bold mb-2">${stepName}</h2>`;
+  
       step.fields.field.forEach((field: { fieldLabel: any; fieldType: any; }) => {
-        
         html += `
-          <label>${field.fieldLabel}</label>
-          <input type="${field.fieldType}" name="${field.fieldLabel}" required><br>
+          <label class="block text-sm font-medium text-gray-700">${field.fieldLabel}</label>
+          <input type="${field.fieldType}" name="${field.fieldLabel}" required
+            class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+          <br>
         `;
       });
       html += `</div>`;
     });
   
     html += `
-      <button type="button" id="prevBtn" disabled>Previous</button>
-      <button type="button" id="nextBtn">Next</button>
-      <button type="submit" id="submitBtn" style="display: none;">Submit</button>
+      <div class="flex justify-between mt-4">
+        <button type="button" id="prevBtn" class="bg-gray-400 text-white px-4 py-2 rounded" disabled>Previous</button>
+        <button type="button" id="nextBtn" class="bg-blue-500 text-white px-4 py-2 rounded">Next</button>
+        <button type="submit" id="submitBtn" class="bg-green-500 text-white px-4 py-2 rounded hidden">Submit</button>
+      </div>
       </form>
       <script>
         const steps = document.querySelectorAll('.step');
@@ -106,21 +109,21 @@ export class MultistepFormTrigger {
   
         function updateButtons() {
           document.getElementById('prevBtn').disabled = currentStep === 0;
-          document.getElementById('nextBtn').style.display = currentStep === steps.length - 1 ? 'none' : 'inline';
-          document.getElementById('submitBtn').style.display = currentStep === steps.length - 1 ? 'inline' : 'none';
+          document.getElementById('nextBtn').classList.toggle('hidden', currentStep === steps.length - 1);
+          document.getElementById('submitBtn').classList.toggle('hidden', currentStep !== steps.length - 1);
         }
   
         document.getElementById('nextBtn').addEventListener('click', () => {
-          steps[currentStep].classList.remove('active');
+          steps[currentStep].classList.add('hidden');
           currentStep++;
-          steps[currentStep].classList.add('active');
+          steps[currentStep].classList.remove('hidden');
           updateButtons();
         });
   
         document.getElementById('prevBtn').addEventListener('click', () => {
-          steps[currentStep].classList.remove('active');
+          steps[currentStep].classList.add('hidden');
           currentStep--;
-          steps[currentStep].classList.add('active');
+          steps[currentStep].classList.remove('hidden');
           updateButtons();
         });
   
@@ -141,13 +144,10 @@ export class MultistepFormTrigger {
   
         updateButtons();
       </script>
+    </div>
     </body>
-    </html>
-    `;
+    </html>`;
   
     return html;
   }
-  
-  
-  
 }
