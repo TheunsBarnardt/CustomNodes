@@ -46,7 +46,6 @@ export class MultistepFormTrigger {
     }
   }
   
-  
   private static generateFormHtml(formTitle: string, steps: any, webhookUrl: string): string {
     let html = `
       <!DOCTYPE html>
@@ -68,34 +67,26 @@ export class MultistepFormTrigger {
         <form id="multistepForm" method="POST" action="${webhookUrl}">
     `;
   
-    Object.values(steps || {}).forEach((step: any, index: number) => {
-      console.log('Step Data:', step); // Log the full step to check its structure
-  
+    const stepsJson = JSON.stringify(steps);
+    console.log(stepsJson);
+
+    const stepsArray = steps.step;
+
+    stepsArray.forEach((step: { fields: { field: any[]; }; stepName: any; }) => {
+      const index = stepsArray.indexOf(step);
+
       const isActive = index === 0 ? 'active' : '';
       const stepName = step.stepName || `Step ${index + 1}`; // Ensure stepName is defined
-      html += `<div class="step ${isActive}" data-step="${stepName}">`;
+      html += `<div class="step ${isActive}" data-step="${step.stepName}">`;
       html += `<h2>${stepName}</h2>`;
-    debugger;
-      // Check if fields are defined and properly structured
-      if (!step.fields || !step.fields.field) {
-        console.error(`Missing or invalid fields for step: ${stepName}`);
-        return;  // Skip this step if there are no fields
-      }
-  
-      // Render the fields for the current step
-      step.fields.field.forEach((field: any) => {
-        if (!field.fieldLabel || !field.fieldType) {
-          console.error(`Invalid field structure for field:`, field);
-          return;
-        }
-  
-        const { fieldLabel, fieldType } = field;
+
+      step.fields.field.forEach((field: { fieldLabel: any; fieldType: any; }) => {
+        
         html += `
-          <label>${fieldLabel}</label>
-          <input type="${fieldType}" name="${fieldLabel}" required><br>
+          <label>${field.fieldLabel}</label>
+          <input type="${field.fieldType}" name="${field.fieldLabel}" required><br>
         `;
       });
-  
       html += `</div>`;
     });
   
@@ -151,6 +142,7 @@ export class MultistepFormTrigger {
   
     return html;
   }
+  
   
   
 }
