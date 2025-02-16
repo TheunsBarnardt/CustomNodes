@@ -1,10 +1,10 @@
 {
-  "name": "n8n-nodes-dataverse",
+  "name": "n8n-nodes-multistep-form",
   "version": "0.1.1",
-  "description": "n8n community node for comunicating to dataverse",
+  "description": "n8n community node trigger for multistep form",
   "keywords": [
     "n8n-community-node-package",
-    "dataverse"
+    "multistep-form"
   ],
   "license": "MIT",
   "homepage": "",
@@ -14,11 +14,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/TheunsBarnardt/n8n-nodes-dataverse.git"
+    "url": "https://github.com/TheunsBarnardt/n8n-nodes-multistep-form.git"
   },
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
     "setup": "npm run build --clean && npm link && n8n",
+    "clean": "rmdir /s /q dist && rmdir /s /q node_modules && npm install && npm run build --clean && npm link && n8n",
     "build": "tsc ",
     "dev": "tsc --watch",
     "format": "prettier nodes credentials --write",
@@ -31,12 +32,7 @@
   ],
   "n8n": {
     "n8nNodesApiVersion": 1,
-    "credentials": [
-      "dist/credentials/dataverseAuth.credentials.js"
-    ],
-    "nodes": [
-      "dist/nodes/Dataverse.node.js"
-    ]
+    "nodes": ["dist/nodes/MultistepFormTrigger.node.js"]
   },
   "devDependencies": {
     "@types/express": "^4.17.6",

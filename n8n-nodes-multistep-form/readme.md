@@ -53,19 +53,11 @@ This Dataverse n8n node is a community node and can be installed in a few ways, 
 *   **Manual Installation (for development or unpublished nodes):** If you're working with a development version of the node or if it's not yet published, you'll likely need to install it manually.  This usually involves:
     *   Cloning the repository (if you have the source code): `git clone https://github.com/TheunsBarnardt/CustomNodes.git`
     *   The Folder **n8n-nodes-custom-forms** is still in progress **don't try and install** 
-    *   Navigating to the node's directory: `cd n8n-nodes-dataverse`
+    *   Navigating to the node's directory: `cd n8n-nodes-dataverse-auth`
     *   Installing dependencies: `npm install` or `yarn install`
     *   Building the node: `npm run build`
     *   Linking the node (if necessary): `npm link`
-
     *   Restarting n8n.
-*   **Install that package to n8n**
-    *   `C:\Users\username\.n8n`
-    *   `md custom` (if not exist)
-    *   `cd custom`
-    *   `npm init` (all defaults)
-    *   `npm link n8n-nodes-dataverse`
-
 
 **4.  Important Considerations:**
 
