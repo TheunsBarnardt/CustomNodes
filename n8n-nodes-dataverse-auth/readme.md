@@ -1,6 +1,6 @@
 # Dataverse n8n Custom Node
 
-![Dataverse](./n8n-nodes-dataverse-auth/nodes/resources/Dataverse_scalable.svg)
+![Dataverse](n8n-nodes-dataverse-auth/nodes/resources/Dataverse_scalable.svg)
 
 This n8n custom node enables seamless integration with the Dynamics 365 Dataverse API, empowering you to automate Dataverse interactions within your n8n workflows.
 
@@ -42,9 +42,9 @@ This Dataverse n8n node is a community node and can be installed in a few ways, 
 
 **2. Locate the Node:**
 
-![alt text](./n8n-nodes-dataverse-auth/nodes/resources/image.png)
+![alt text](n8n-nodes-dataverse-auth/nodes/resources/image.png)
 
-![alt text](./n8n-nodes-dataverse-auth/nodes/resources/image-1.png)
+![alt text](n8n-nodes-dataverse-auth/nodes/resources/image-1.png)
 *   **n8n Community Nodes Repository:**  The most common way to install community nodes is through the n8n UI itself.  In your n8n instance, go to the "Nodes" section and search for "Dataverse".  If it's published in the community repository, you should find it there.
 
 **3. Install the Node:**
