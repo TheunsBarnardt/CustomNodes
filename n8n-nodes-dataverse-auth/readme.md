@@ -1,6 +1,6 @@
 # Dataverse n8n Custom Node
 
-![Dataverse](nodes/resources/Dataverse_scalable.svg)
+![Dataverse](./n8n-nodes-dataverse-auth/nodes/resources/Dataverse_scalable.svg)
 
 This n8n custom node enables seamless integration with the Dynamics 365 Dataverse API, empowering you to automate Dataverse interactions within your n8n workflows.
 
