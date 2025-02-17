@@ -3,7 +3,7 @@ import { INodeTypeDescription, NodeConnectionType } from 'n8n-workflow';
 export const MultistepFormTriggerDescription: INodeTypeDescription = {
   displayName: 'Multistep Form Trigger',
   name: 'multistepFormTrigger',
-  icon: 'fa:form',
+  icon: 'file:./resources/n8n_custom_forms_icon.svg',
   group: ['trigger'],
   version: 1,
   description: 'Triggers a workflow when a multistep form is submitted',

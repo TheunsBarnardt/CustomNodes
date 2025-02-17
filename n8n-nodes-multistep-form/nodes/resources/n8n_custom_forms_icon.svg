@@ -1,0 +1,38 @@
+<svg
+    width="100" height="100"
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+>
+    <!-- Background with slight gradient for depth -->
+    <defs>
+        <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#FF5917; stop-opacity:1"/>
+            <stop offset="100%" style="stop-color:#FF914D; stop-opacity:1"/>
+        </linearGradient>
+    </defs>
+
+    <rect x="2" y="2" width="20" height="20" rx="5" stroke="url(#grad1)" stroke-width="2" fill="white"/>
+    
+    <!-- Form elements to add complexity -->
+    <path d="M6 7h12M6 10h8M6 13h10" stroke="#FF5917" stroke-width="2" stroke-linecap="round"/>
+    
+    <!-- Highlight circles to stand out -->
+    <circle cx="18" cy="10" r="2.5" fill="url(#grad1)" stroke="white" stroke-width="1"/>
+    <circle cx="18" cy="13" r="2.5" fill="url(#grad1)" stroke="white" stroke-width="1"/>
+
+    <!-- Outer glow effect -->
+    <filter id="glow">
+        <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
+        <feMerge>
+            <feMergeNode in="coloredBlur"/>
+            <feMergeNode in="SourceGraphic"/>
+        </feMerge>
+    </filter>
+
+    <!-- Apply glow effect -->
+    <g filter="url(#glow)">
+        <rect x="2" y="2" width="20" height="20" rx="5" stroke="none" fill="none"/>
+    </g>
+
+</svg>
