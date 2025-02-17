@@ -84,17 +84,149 @@ export class MultistepFormTrigger {
     stepsArray.forEach((step: { fields: { field: any[] }; stepName: any }, index: number) => {
       const isActive = index === 0 ? 'block' : 'hidden';
       const stepName = step.stepName || `Step ${index + 1}`;
-      html += `<div class="step ${isActive}" data-step="${step.stepName}">
+      html += `<div class="step ${isActive} grid gap-6 mb-6" data-step="${step.stepName}">
                 <h2 class="text-lg font-bold mb-2">${stepName}</h2>`;
 
-      step.fields.field.forEach((field: { fieldLabel: any; fieldType: any }) => {
-        html += `
-          <label class="block text-sm font-medium text-gray-700">${field.fieldLabel}</label>
-          <input type="${field.fieldType}" name="${field.fieldLabel}" required
-            class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-          <br>
-        `;
-      });
+                step.fields.field.forEach((field: { fieldLabel: string; fieldType: string }) => {
+                
+                  switch (field.fieldType) {
+                    case 'checkbox':
+                      html += `
+                        <label class="block text-sm font-medium text-gray-700">${field.fieldLabel}</label>
+                        <input type="checkbox" name="${field.fieldLabel}" class="mt-1" />
+                      `;
+                      break;
+                
+                    case 'color':
+                      html += `
+                       <label class="block text-sm font-medium text-gray-700">${field.fieldLabel}</label>
+                        <input type="color" name="${field.fieldLabel}" class="w-10 h-10 p-0 border-none rounded-md">
+                      `;
+                      break;
+                
+                    case 'date':
+                      html += `
+                        <label class="block text-sm font-medium text-gray-700">${field.fieldLabel}</label>
+                        <input type="date" name="${field.fieldLabel}" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                      `;
+                      break;
+                
+                    case 'datetime-local':
+                      html += `
+                        <label class="block text-sm font-medium text-gray-700">${field.fieldLabel}</label>
+                        <input type="datetime-local" name="${field.fieldLabel}" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                      `;
+                      break;
+                
+                    case 'email':
+                      html += `
+                        <label class="block text-sm font-medium text-gray-700">${field.fieldLabel}</label>
+                        <input type="email" name="${field.fieldLabel}" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                      `;
+                      break;
+                
+                    case 'file':
+                      html += `
+                        <label class="block text-sm font-medium text-gray-700">${field.fieldLabel}</label>
+                        <input type="file" name="${field.fieldLabel}" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                      `;
+                      break;
+                
+                    case 'image':
+                      html += `
+                        <label class="block text-sm font-medium text-gray-700">${field.fieldLabel}</label>
+                        <input type="file" accept="image/*" name="${field.fieldLabel}" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                      `;
+                      break;
+                
+                    case 'month':
+                      html += `
+                        <label class="block text-sm font-medium text-gray-700">${field.fieldLabel}</label>
+                        <input type="month" name="${field.fieldLabel}" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                      `;
+                      break;
+                
+                    case 'number':
+                      html += `
+                        <label class="block text-sm font-medium text-gray-700">${field.fieldLabel}</label>
+                        <input type="number" name="${field.fieldLabel}" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                      `;
+                      break;
+                
+                    case 'password':
+                      html += `
+                        <label class="block text-sm font-medium text-gray-700">${field.fieldLabel}</label>
+                        <input type="password" name="${field.fieldLabel}" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                      `;
+                      break;
+                
+                    case 'radio':
+                      html += `
+                        <label class="block text-sm font-medium text-gray-700">${field.fieldLabel}</label>
+                        <input type="radio" name="${field.fieldLabel}" class="mt-1">
+                      `;
+                      break;
+                
+                    case 'range':
+                      html += `
+                        <label class="block text-sm font-medium text-gray-700">${field.fieldLabel}</label>
+                        <input type="range" name="${field.fieldLabel}" min="0" max="100" class="mt-1 block w-full">
+                      `;
+                      break;
+                
+                    case 'search':
+                      html += `
+                        <label class="block text-sm font-medium text-gray-700">${field.fieldLabel}</label>
+                        <input type="search" name="${field.fieldLabel}" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                      `;
+                      break;
+                
+                    case 'tel':
+                      html += `
+                        <label class="block text-sm font-medium text-gray-700">${field.fieldLabel}</label>
+                        <input type="tel" name="${field.fieldLabel}" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                      `;
+                      break;
+                
+                    case 'text':
+                      html += `
+                      <div class="mb-6">
+                          <label for="${field.fieldType}" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">${field.fieldLabel}</label>
+                          <input type="text" id="${field.fieldType}" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+                      </div>
+                      `;
+                      break;
+                
+                    case 'time':
+                      html += `
+                        <label class="block text-sm font-medium text-gray-700">${field.fieldLabel}</label>
+                        <input type="time" name="${field.fieldLabel}" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                      `;
+                      break;
+                
+                    case 'url':
+                      html += `
+                        <label class="block text-sm font-medium text-gray-700">${field.fieldLabel}</label>
+                        <input type="url" name="${field.fieldLabel}" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                      `;
+                      break;
+                
+                    case 'week':
+                      html += `
+                        <label class="block text-sm font-medium text-gray-700">${field.fieldLabel}</label>
+                        <input type="week" name="${field.fieldLabel}" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                      `;
+                      break;
+                
+                    default:
+                      html += `
+                        <label class="block text-sm font-medium text-gray-700">${field.fieldLabel}</label>
+                        <input type="text" name="${field.fieldLabel}" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                      `;
+                      break;
+                  }
+                });
+                
       html += `</div>`;
     });
 
