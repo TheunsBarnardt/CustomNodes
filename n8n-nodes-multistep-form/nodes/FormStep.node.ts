@@ -6,19 +6,12 @@ export class FormStep implements INodeType {
   description = formStepDescription;
   async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
     try {
-      console.log("*input data*");
+
       const inputData = this.getInputData();
-      console.log(JSON.stringify(inputData, null, 2));
-
-      console.log("*step name*");
       const stepName = this.getNodeParameter("stepName", 0) as string;
-      console.log(stepName);
-
-      console.log("*step data*");
       const stepInputs = this.getNodeParameter("stepInputs", 0) as {
         stepInput: { name: string; label: string; required: boolean; type: string }[];
       };
-      console.log(JSON.stringify(stepInputs, null, 2));
 
       // Extract existing form data from inputData
       const existingForm = inputData[0]?.json || { name: "Default Form", steps: [] };
@@ -41,8 +34,6 @@ export class FormStep implements INodeType {
         ],
       };
 
-      console.log("*updated form*");
-      console.log(JSON.stringify(updatedForm, null, 2));
       return [[{ json: updatedForm }]] ;
 
      // return { json: { form: { ...formData.form, steps: currentSteps } }, noWebhookResponse: true } as IWebhookResponseData;

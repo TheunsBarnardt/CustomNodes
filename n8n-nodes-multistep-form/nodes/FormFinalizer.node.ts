@@ -1,15 +1,76 @@
-
-// FormFinalizer.node.ts
-import { INodeType, IWebhookFunctions, IWebhookResponseData, NodeApiError } from "n8n-workflow";
+import { IExecuteFunctions, INodeExecutionData, INodeType } from "n8n-workflow";
 import { formFinalizerDescription } from "./FormFinalizer.node.description";
 
 export class FormFinalizer implements INodeType {
   description = formFinalizerDescription;
 
+  async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
+    const inputData = this.getInputData();
+
+    // Access the first item in the inputData array and retrieve 'json' from it
+    const formData = inputData[0]?.json || {}; // Default to an empty object if inputData is empty or undefined
+
+    // Ensure formData.steps is an array, otherwise fallback to an empty array
+    const steps = Array.isArray(formData.steps) ? formData.steps : [];
+
+    let formHtml = '<form action="/submit" method="POST">';
+
+    // Iterate over the steps if it's an array
+    if (steps.length > 0) {
+      steps.forEach((step: any, index: number) => {
+        formHtml += `<h2>Step ${index + 1}: ${step.name}</h2>`;
+
+        // Ensure each step has a 'fields' array, otherwise fallback to an empty array
+        const fields = Array.isArray(step.fields) ? step.fields : [];
+
+        fields.forEach((field: any) => {
+          formHtml += `<label for="${field.name}">${field.label}</label>`;
+          switch (field.type) {
+            case "text":
+            case "email":
+            case "number":
+              formHtml += `<input type="${field.type}" name="${field.name}" ${
+                field.required ? "required" : ""
+              } />`;
+              break;
+            case "textarea":
+              formHtml += `<textarea name="${field.name}" ${
+                field.required ? "required" : ""
+              }></textarea>`;
+              break;
+          }
+          formHtml += "<br>";
+        });
+      });
+    }
+
+    formHtml += '<button type="submit">Submit</button>';
+    formHtml += "</form>";
+
+    console.log(formHtml);
+    // Return the HTML form as Base64 encoded string
+    return [
+      [
+        {
+          json: {}, // Keep an empty JSON object (required by n8n)
+          binary: {
+            data: {
+              data: Buffer.from(formHtml, "utf-8").toString("base64"), // Encode HTML as Base64
+              mimeType: "text/html",
+            },
+          },
+        },
+      ],
+    ];
+  }
+}
+
+/*
   async webhook(this: IWebhookFunctions): Promise<IWebhookResponseData> {
     debugger;
     const self = this as unknown as FormFinalizer;
     try {
+      debugger;
       const req = this.getRequestObject();
       const res = this.getResponseObject();
 
@@ -31,6 +92,7 @@ export class FormFinalizer implements INodeType {
   }
 
   private constructHtmlForm(workflowData: any): string {
+    debugger;
     let formHtml = '<form action="/submit" method="POST">';
 
     workflowData.steps.forEach((step: any, index: number) => {
@@ -59,4 +121,4 @@ export class FormFinalizer implements INodeType {
         return '';
     }
   }
-}
+}*/
