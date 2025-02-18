@@ -32,7 +32,9 @@
   ],
   "n8n": {
     "n8nNodesApiVersion": 1,
-    "nodes": ["dist/nodes/MultistepFormTrigger.node.js"]
+    "nodes": [
+      "dist/nodes/MultistepFormTrigger.node.js"
+    ]
   },
   "devDependencies": {
     "@types/express": "^4.17.6",
