@@ -1,8 +1,8 @@
 // FormStep.node.ts
-import { IExecuteFunctions, INodeExecutionData, INodeType,   NodeApiError} from 'n8n-workflow';
-import { formStepDescription } from './FormStep.node.description';
+import { IExecuteFunctions, INodeExecutionData, INodeType,   IWebhookFunctions,   IWebhookResponseData,   NodeApiError} from 'n8n-workflow';
+import { formStepDescription } from './Form.node.description';
 
-export class FormStep implements INodeType {
+export class Form implements INodeType {
   description = formStepDescription;
   async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
     try {
@@ -33,12 +33,17 @@ export class FormStep implements INodeType {
           },
         ],
       };
-
+      console.log(JSON.stringify(updatedForm, null, 2));
       return [[{ json: updatedForm }]] ;
 
      // return { json: { form: { ...formData.form, steps: currentSteps } }, noWebhookResponse: true } as IWebhookResponseData;
     } catch (error) {
       throw new NodeApiError(this.getNode(), error);
     }
+  }
+
+  async webhook(this: IWebhookFunctions): Promise<IWebhookResponseData> {
+    console.log("webhook");
+    return { noWebhookResponse: true } as IWebhookResponseData;
   }
 }

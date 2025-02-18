@@ -1,6 +1,5 @@
-import { FormFinalizer } from "./nodes/FormFinalizer.node";
-import { FormStep } from "./nodes/FormStep.node";
+import { Form } from "./nodes/Form.node";
 import { FormTrigger } from "./nodes/FormTrigger.node";
 
 
-export const nodes = [FormTrigger, FormStep, FormFinalizer];
+export const nodes = [FormTrigger, Form,];
