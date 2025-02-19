@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="{{formDescriptionMetadata}}">
+    <meta property="og:title" content="{{formTitle}}">
+    <meta property="og:description" content="{{formDescriptionMetadata}}">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="/static/og_image.png">
+    <link rel="icon" type="image/png" href="https://n8n.io/favicon.ico">
+    <title>{{formTitle}}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="font-sans text-sm flex flex-col justify-start bg-gray-50">
+    <div class="mx-auto text-center pt-6 w-[448px]">
+        {{#if testRun}}
+            <div class="p-3 text-yellow-600 bg-yellow-50 rounded-lg border border-yellow-300 text-left mb-4">
+                <p>This is a test version of your form</p>
+            </div>
+            <hr class="border-t border-gray-300 my-4">
+        {{/if}}
+
+        {{#if validForm}}
+            <form class="p-6 bg-white border border-gray-300 rounded-lg shadow-md mb-4" action="#" method="POST" name="n8n-form" id="n8n-form" novalidate>
+                <div class="text-gray-700">
+                    <h1 class="text-lg font-medium">{{formTitle}}</h1>
+                    <p class="pt-2 text-gray-500 text-base">{{{formDescription}}}</p>
+                </div>
+
+                <div class="py-6">
+                    {{#each formFields}}
+                    {{#if isMultiSelect}}
+					<div>
+						<label
+							class="form-label {{inputRequired}} block text-left text-base font-semibold text-555555 pb-1"
+							for="{{id}}">{{label}}</label>
+						<div class="multiselect {{inputRequired}} pl-1 pr-1 border border-dbdfe7 rounded-lg"
+							id="{{id}}"> {{#each multiSelectOptions}}
+							<div class="multiselect-option flex items-center pt-2"> <input type="checkbox"
+									class="multiselect-checkbox mr-2 w-4 h-4 cursor-pointer" id="{{id}}" /> <label
+									for="{{id}}" class="text-7e8186 font-normal cursor-pointer">{{label}}</label> </div>
+							{{/each}}
+						</div>
+						<p class="{{errorId}} error-hidden text-left text-xs text-ea1f30 pt-1 pb-2"> This field is
+							required
+						</p>
+					</div>
+					{{/if}}
+
+					{{#if isSelect}}
+					<div class="form-group">
+						<label
+							class="form-label {{inputRequired}} block text-left text-base font-semibold text-555555 pb-1"
+							for="{{id}}">{{label}}</label>
+						<div class="select-input border border-dbdfe7 rounded-lg focus-within:border-rgb(90, 76, 194)">
+							<select id="{{id}}" name="{{id}}"
+								class="{{inputRequired}} w-full text-base text-71747A font-normal bg-white px-3 py-2 appearance-none">
+								<option value="" disabled selected>Select an option ...</option>
+								{{#each selectOptions}}
+								<option value="{{this}}">{{this}}</option>
+								{{/each}}
+							</select>
+						</div>
+						<p class="{{errorId}} error-hidden text-left text-xs text-ea1f30 pt-1 pb-2">
+							This field is required
+						</p>
+					</div>
+					{{/if}}
+
+					{{#if isHtml}}
+					<div class="form-group html text-left text-base text-555">
+						{{{html}}}
+						<input type="hidden" id="{{id}}" name="{{id}}" value="{{html}}" />
+					</div>
+					{{/if}}
+
+					{{#if isHidden}}
+					<input type="hidden" id="{{id}}" name="{{id}}" value="{{hiddenValue}}" />
+					{{/if}}
+
+					{{#if isTextarea}}
+					<div class="form-group">
+						<label
+							class="form-label {{inputRequired}} block text-left text-base font-semibold text-555555 pb-1"
+							for="{{id}}">{{label}}</label>
+						<textarea
+							class="form-input {{inputRequired}} border border-dbdfe7 rounded-lg w-full text-base text-71747A font-normal px-3 py-2"
+							id="{{id}}" name="{{id}}" placeholder="{{placeholder}}">{{defaultValue}}</textarea>
+						<p class="{{errorId}} error-hidden text-left text-xs text-ea1f30 pt-1 pb-2">
+							This field is required
+						</p>
+					</div>
+					{{/if}}
+
+					{{#if isFileInput}}
+					<div class="form-group file-input-wrapper relative">
+						<label
+							class="form-label {{inputRequired}} block text-left text-base font-semibold text-555555 pb-1"
+							for="{{id}}">{{label}}</label>
+						<input
+							class="form-input {{inputRequired}} border border-dbdfe7 rounded-lg w-full text-base text-71747A font-normal px-3 py-2"
+							type="file" id="{{id}}" name="{{id}}" accept="{{acceptFileTypes}}" {{multipleFiles}}
+							placeholder="{{placeholder}}" />
+						<button
+							class="clear-button absolute right-1/4 top-1/2 -translate-y-1/2 bg-7e8186 border-none rounded-full text-white text-base font-semibold w-5 h-5 text-center leading-5 cursor-pointer hidden">&times;</button>
+						<p class="{{errorId}} error-hidden text-left text-xs text-ea1f30 pt-1 pb-2">
+							This field is required
+						</p>
+					</div>
+					{{/if}}
+
+					{{#if isInput}}
+					<div class="form-group">
+						<label
+							class="form-label {{inputRequired}} block text-left text-base font-semibold text-555555 pb-1"
+							for="{{id}}">{{label}}</label>
+						<input
+							class="form-input {{inputRequired}} border border-dbdfe7 rounded-lg w-full text-base text-71747A font-normal px-3 py-2"
+							type="{{type}}" id="{{id}}" name="{{id}}" value="{{defaultValue}}"
+							placeholder="{{placeholder}}" />
+						<p class="{{errorId}} error-hidden text-left text-xs text-ea1f30 pt-1 pb-2">
+							This field is required
+						</p>
+					</div>
+					{{/if}}
+                    {{/each}}
+                </div>
+
+                <button id="submit-btn" type="submit" class="w-full h-12 p-3 rounded-md text-white font-semibold bg-red-500 hover:bg-red-600">{{buttonLabel}}</button>
+            </form>
+        {{else}}
+            <div class="p-6 bg-white border border-gray-300 rounded-lg shadow-md">
+                <div class="text-gray-700">
+                    <h1 class="text-lg font-medium">Problem loading form</h1>
+                    <p>This usually occurs if the n8n workflow serving this form is deactivated or no longer exists.</p>
+                </div>
+            </div>
+        {{/if}}
+    </div>
+</body>
+</html>

@@ -1,4 +1,5 @@
 import type { Response } from 'express';
+import Handlebars from 'handlebars';
 import { DateTime } from 'luxon';
 import type {
 	INodeExecutionData,
@@ -101,8 +102,8 @@ export function prepareFormData({
 	formSubmittedHeader?: string;
 }) {
 	const validForm = formFields.length > 0;
-	const utm_campaign = instanceId ? `&utm_campaign=${instanceId}` : '';
-	const n8nWebsiteLink = `https://n8n.io/?utm_source=n8n-internal&utm_medium=form-trigger${utm_campaign}`;
+	//const utm_campaign = instanceId ? `&utm_campaign=${instanceId}` : '';
+	const n8nWebsiteLink = ``;
 
 	if (formSubmittedText === undefined) {
 		formSubmittedText = 'Your response has been recorded';
@@ -186,6 +187,7 @@ export const validateResponseModeConfiguration = (context: IWebhookFunctions) =>
 	const responseMode = context.getNodeParameter('responseMode', 'onReceived') as string;
 	const connectedNodes = context.getChildNodes(context.getNode().name);
 	const nodeVersion = context.getNode().typeVersion;
+  
 
 	const isRespondToWebhookConnected = connectedNodes.some(
 		(node) => node.type === 'n8n-nodes-base.respondToWebhook',
@@ -336,6 +338,7 @@ export async function prepareFormReturnItem(
 }
 
 export function renderForm({
+
 	context,
 	res,
 	formTitle,
@@ -346,8 +349,9 @@ export function renderForm({
 	formSubmittedText,
 	redirectUrl,
 	appendAttribution,
-	buttonLabel,
+	buttonLabel
 }: {
+
 	context: IWebhookFunctions;
 	res: Response;
 	formTitle: string;
@@ -402,10 +406,22 @@ export function renderForm({
 		appendAttribution,
 		buttonLabel,
 	});
-
-	res.render('form-trigger', data);
+    const html = context.getNodeParameter('formHtml');
+    debugger;
+    const htmlString = Array.isArray(html) ? html.join("") : String(html);
+    renderFormWithData({res,data,html:htmlString});
 }
 
+async function renderFormWithData({ res, data ,html}: { res: Response; data: FormTriggerData ,  html:string}) {
+    try {
+        const template = Handlebars.compile(html); // Compile the template
+        const htmltemplate = template(data); // Render the template with the data
+        res.send(htmltemplate); // Send the HTML to the client
+    } catch (error) {
+        console.error("Error rendering form:", error);
+        res.status(500).send("Error rendering form"); // Send an error response
+    }
+}
 export const isFormConnected = (nodes: NodeTypeAndVersion[]) => {
 	return nodes.some(
 		(n) =>
@@ -455,6 +471,7 @@ export async function formWebhook(
 		const formTitle = context.getNodeParameter('formTitle', '') as string;
 		const formDescription = sanitizeHtml(context.getNodeParameter('formDescription', '') as string);
 		const responseMode = context.getNodeParameter('responseMode', '') as string;
+        
 
 		let formSubmittedText;
 		let redirectUrl;
@@ -494,6 +511,7 @@ export async function formWebhook(
 		}
 
 		renderForm({
+
 			context,
 			res,
 			formTitle,
@@ -505,6 +523,7 @@ export async function formWebhook(
 			redirectUrl,
 			appendAttribution,
 			buttonLabel,
+            
 		});
 
 		return {
