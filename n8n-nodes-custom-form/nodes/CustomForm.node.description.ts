@@ -1,6 +1,6 @@
 import { INodeTypeDescription, NodeConnectionType } from 'n8n-workflow';
 
-export const formStepDescription: INodeTypeDescription = {
+export const CustomFormStepDescription: INodeTypeDescription = {
   displayName: 'Custom Form Step',
   name: 'formStep',
   icon: 'file:./resources/n8n_custom_forms_icon.svg',

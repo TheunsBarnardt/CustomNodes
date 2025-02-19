@@ -1,9 +1,9 @@
 // FormStep.node.ts
 import { IExecuteFunctions, INodeExecutionData, INodeType,   IWebhookFunctions,   IWebhookResponseData,   NodeApiError} from 'n8n-workflow';
-import { formStepDescription } from './CustomForm.node.description';
+import { CustomFormStepDescription } from './CustomForm.node.description';
 
-export class Form implements INodeType {
-  description = formStepDescription;
+export class CustomForm implements INodeType {
+  description = CustomFormStepDescription;
   async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
     try {
 

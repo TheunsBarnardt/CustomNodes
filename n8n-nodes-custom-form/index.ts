@@ -1,5 +1,5 @@
-import { Form } from "./nodes/CustomForm.node";
-import { FormTrigger } from "./nodes/CustomFormTrigger.node";
+import { CustomForm } from "./nodes/CustomForm.node";
+import { CustomFormTrigger } from "./nodes/CustomFormTrigger.node";
 
 
-export const nodes = [FormTrigger, Form,];
+export const nodes = [CustomFormTrigger, CustomForm,];

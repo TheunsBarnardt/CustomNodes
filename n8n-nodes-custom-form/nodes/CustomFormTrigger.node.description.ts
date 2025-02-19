@@ -1,7 +1,7 @@
 import { INodePropertyOptions, INodeTypeDescription, NodeConnectionType } from "n8n-workflow";
 import { formDescription, formFields, formRespondMode, formTitle, formTriggerPanel, webhookPath } from "./common.descriptions";
 
-export const formTriggerDescription: INodeTypeDescription = {
+export const CustomFormTriggerDescription: INodeTypeDescription = {
   displayName: 'Custom Form Trigger',
   name: 'formTrigger',
   icon: 'file:./resources/n8n_custom_forms_icon.svg',
