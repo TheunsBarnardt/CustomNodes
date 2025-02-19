@@ -36,7 +36,7 @@
   "n8n": {
     "n8nNodesApiVersion": 1,
     "nodes": [
-      "dist/nodes/FormTrigger.node.js"
+      "dist/nodes/CustomFormTrigger.node.js"
     ]
   },
   "devDependencies": {

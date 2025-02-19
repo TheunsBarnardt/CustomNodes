@@ -1,5 +1,5 @@
 import { INodeType, IWebhookFunctions } from "n8n-workflow";
-import { formTriggerDescription } from "./FormTrigger.node.description";
+import { formTriggerDescription } from "./CustomFormTrigger.node.description";
 import { formWebhook } from "./utils";
 
 
